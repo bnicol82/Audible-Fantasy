@@ -253,15 +253,12 @@ button {
 
 .tabbar {
   display: flex;
-  justify-content: space-around;
-  align-items: center;
-  padding: 14px 8px max(16px, env(safe-area-inset-bottom));
+  justify-content: space-between;
+  align-items: stretch;
+  gap: 6px;
+  padding: calc(12px + var(--stripe-thick, 8px)) 10px max(18px, env(safe-area-inset-bottom));
   background: var(--tabbar-bg, var(--surface-card));
-  font-family: var(--font-mono), monospace;
-  font-size: 9px;
-  letter-spacing: 0.12em;
-  color: var(--text-subtle);
-  text-transform: uppercase;
+  color: var(--text-muted);
   flex-shrink: 0;
   position: relative;
   box-shadow: var(--shadow-surface);
@@ -281,29 +278,84 @@ button {
 
 .tabbar button {
   display: flex;
+  flex: 1;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 8px 4px 6px;
+  border-radius: 14px;
+  transition: color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+}
+
+.tabbar button:active {
+  transform: scale(0.97);
 }
 
 .tabbar .ico {
-  width: 22px;
-  height: 22px;
-  border: var(--border-width) solid currentColor;
-  border-radius: 6px;
-  opacity: 0.85;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.12) inset;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: var(--border-width) solid var(--line-thin);
+  border-radius: 12px;
+  background: var(--surface-raised, rgba(255, 255, 255, 0.06));
+  color: var(--text);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.12) inset, 0 3px 8px var(--depth-shadow);
+}
+
+.tabbar .ico svg {
+  display: block;
+}
+
+.tabbar .tab-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  min-width: 0;
+}
+
+.tabbar .tab-label {
+  font-family: var(--font-barlow), sans-serif;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.1;
+  color: var(--text);
+}
+
+.tabbar .tab-hint {
+  font-family: var(--font-mono), monospace;
+  font-size: 8.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-subtle);
+  line-height: 1.1;
 }
 
 .tabbar .on {
   color: var(--accent);
+  background: var(--accent-dim);
 }
 
 .tabbar .on .ico {
   border-width: var(--border-width-thick);
   border-color: var(--accent);
-  background: var(--accent-dim);
-  box-shadow: 0 0 0 2px var(--accent-dim), 0 2px 6px rgba(0, 0, 0, 0.15);
+  background: var(--surface-card, var(--accent-dim));
+  color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-dim), 0 4px 10px var(--depth-shadow);
+}
+
+.tabbar .on .tab-label {
+  color: var(--accent);
+}
+
+.tabbar .on .tab-hint {
+  color: var(--accent);
+  opacity: 0.78;
 }
 
 .btn {
