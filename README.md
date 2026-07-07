@@ -1,47 +1,40 @@
-# Audible Fantasy
+# Audible
 
-A fantasy audiobook browsing UI built with Next.js, TypeScript, and Tailwind CSS.
+**Fantasy football assistant** — connect your league, ask grounded AI questions, compare start/sit decisions, and get waiver recommendations.
 
-## Features
+## Live Demo
 
-- Featured hero section with book spotlight
-- Searchable catalog with genre filters
-- Responsive grid layout
-- Dark fantasy-themed design
+**https://bnicol82.github.io/Audible-Fantasy/**
 
-## Getting Started
+## Screens
+
+1. **Connect league** — Sleeper, Yahoo, ESPN
+2. **My Team** — Roster dashboard with projections and win probability
+3. **Ask Audible** — Grounded AI chat that knows your roster and scoring
+4. **Start / Sit** — Side-by-side player comparison with verdict
+5. **Waivers** — FAAB bid suggestions tailored to your roster
+
+## Design
+
+Night-game direction: turf-dark surfaces, chalk-line dividers, penalty-flag gold for decisions. Barlow Condensed headers, IBM Plex Mono scoreboard data.
+
+## Local Development
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to view the app.
-
 ## Deployment
 
-The project includes GitHub Actions workflows for CI and Vercel deployment.
+Pushes to `main` auto-deploy via GitHub Actions to GitHub Pages.
 
-### GitHub Pages (recommended — no secrets required)
-
-1. Go to **Settings → Pages** in your repo
-2. Under **Build and deployment**, set **Source** to **GitHub Actions**
-3. Re-run the **Deploy to GitHub Pages** workflow (or push to `main`)
-4. Your site will be live at **https://bnicol82.github.io/Audible-Fantasy/**
-
-### Vercel (optional — preview URLs per PR)
-
-1. Create a project at [vercel.com](https://vercel.com) linked to this repo
-2. Add these GitHub repository secrets:
-   - `VERCEL_TOKEN` — [account token](https://vercel.com/account/tokens)
-   - `VERCEL_ORG_ID` — from `.vercel/project.json` after linking
-   - `VERCEL_PROJECT_ID` — from `.vercel/project.json` after linking
-3. Add repository variable `VERCEL_DEPLOY_ENABLED` = `true`
-4. Deployments run automatically on push/PR
+```bash
+GITHUB_PAGES=true npm run build
+```
 
 ## Tech Stack
 
-- [Next.js 15](https://nextjs.org/)
-- [React 19](https://react.dev/)
-- [Tailwind CSS 4](https://tailwindcss.com/)
-- [Vercel](https://vercel.com/) for hosting
+- Next.js 15
+- React 19
+- TypeScript

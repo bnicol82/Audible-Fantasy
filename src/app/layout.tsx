@@ -1,27 +1,29 @@
 import type { Metadata } from "next";
-import { Cinzel, Geist, Geist_Mono } from "next/font/google";
+import { Barlow, Barlow_Condensed, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const barlow = Barlow({
+  variable: "--font-barlow",
   subsets: ["latin"],
+  weight: ["400", "500", "600"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const barlowCondensed = Barlow_Condensed({
+  variable: "--font-condensed",
   subsets: ["latin"],
+  weight: ["500", "600", "700"],
 });
 
-const cinzel = Cinzel({
-  variable: "--font-cinzel",
+const ibmPlexMono = IBM_Plex_Mono({
+  variable: "--font-mono",
   subsets: ["latin"],
-  weight: ["400", "600", "700"],
+  weight: ["400", "500", "600"],
 });
 
 export const metadata: Metadata = {
-  title: "Audible Fantasy — Epic Fantasy Audiobooks",
+  title: "Audible — Fantasy Football Assistant",
   description:
-    "Discover and listen to the best fantasy audiobooks. Epic quests, dark magic, and legendary narrators await.",
+    "Your team, your scoring, real answers. Connect a league and ask anything.",
 };
 
 export default function RootLayout({
@@ -32,7 +34,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${cinzel.variable} antialiased bg-fantasy-gradient min-h-screen`}
+        className={`${barlow.variable} ${barlowCondensed.variable} ${ibmPlexMono.variable}`}
       >
         {children}
       </body>

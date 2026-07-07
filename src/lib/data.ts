@@ -1,153 +1,115 @@
-export type Audiobook = {
-  id: string;
-  title: string;
-  author: string;
-  narrator: string;
-  series?: string;
-  seriesNumber?: number;
-  duration: string;
-  rating: number;
-  reviews: number;
-  description: string;
-  coverUrl: string;
-  genre: string;
-  featured?: boolean;
+export type Player = {
+  slot: string;
+  name: string;
+  team: string;
+  matchup: string;
+  projection: number;
+  injury?: string;
+  questionable?: boolean;
 };
 
-export const genres = [
-  "All",
-  "Epic Fantasy",
-  "Dark Fantasy",
-  "Urban Fantasy",
-  "High Fantasy",
-  "Grimdark",
-] as const;
+export type WaiverTarget = {
+  name: string;
+  position: string;
+  team: string;
+  rostered: string;
+  suggestedBid: number;
+  why: string;
+  tags: { label: string; variant?: "gold" | "red" }[];
+  dropSuggestion?: string;
+};
 
-export const audiobooks: Audiobook[] = [
+export const league = {
+  name: "The Gauntlet League",
+  scoring: "Half PPR",
+  week: 5,
+  record: "3–1",
+  faabRemaining: 62,
+  claimsSet: 2,
+};
+
+export const matchup = {
+  yourTeam: "Billy's Bandits",
+  opponent: "Gridiron Gang",
+  yourProjection: 118.4,
+  opponentProjection: 112.7,
+  winProbability: 57,
+  kickoff: "SUN 1:00 PM",
+};
+
+export const roster: Player[] = [
+  { slot: "QB", name: "Josh Allen", team: "BUF", matchup: "vs MIA", projection: 22.4 },
+  { slot: "RB", name: "Bijan Robinson", team: "ATL", matchup: "@ CAR", projection: 18.9 },
   {
-    id: "1",
-    title: "The Name of the Wind",
-    author: "Patrick Rothfuss",
-    narrator: "Nick Podehl",
-    series: "Kingkiller Chronicle",
-    seriesNumber: 1,
-    duration: "27h 55m",
-    rating: 4.8,
-    reviews: 89432,
-    description:
-      "The tale of Kvothe, from his childhood in a troupe of traveling players to his daring bid to enter a legendary school of magic.",
-    coverUrl:
-      "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=600&fit=crop",
-    genre: "Epic Fantasy",
-    featured: true,
+    slot: "RB",
+    name: "Jahmyr Gibbs",
+    team: "DET",
+    matchup: "vs GB",
+    projection: 15.1,
+    questionable: true,
+    injury: "ANKLE",
+  },
+  { slot: "WR", name: "Ja'Marr Chase", team: "CIN", matchup: "@ BAL", projection: 17.6 },
+  { slot: "WR", name: "Puka Nacua", team: "LAR", matchup: "vs SEA", projection: 16.8 },
+  { slot: "TE", name: "Trey McBride", team: "ARI", matchup: "@ SF", projection: 11.2 },
+  { slot: "FLX", name: "Zay Flowers", team: "BAL", matchup: "vs CIN", projection: 13.2 },
+];
+
+export const waiverTargets: WaiverTarget[] = [
+  {
+    name: "Tyjae Spears",
+    position: "RB",
+    team: "TEN",
+    rostered: "41%",
+    suggestedBid: 14,
+    why: "Covers your thinnest position — you have no RB3, and Gibbs is questionable. Lead-back usage the last 2 weeks (68% snaps).",
+    tags: [{ label: "FILLS RB DEPTH", variant: "gold" }],
+    dropSuggestion: "J. FORD",
   },
   {
-    id: "2",
-    title: "The Way of Kings",
-    author: "Brandon Sanderson",
-    narrator: "Kate Reading & Michael Kramer",
-    series: "The Stormlight Archive",
-    seriesNumber: 1,
-    duration: "45h 29m",
-    rating: 4.9,
-    reviews: 124567,
-    description:
-      "Roshar is a world of stone and storms. Uncanny tempests sweep the terrain, and wars rage across the land.",
-    coverUrl:
-      "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=400&h=600&fit=crop",
-    genre: "Epic Fantasy",
-    featured: true,
+    name: "Darnell Mooney",
+    position: "WR",
+    team: "ATL",
+    rostered: "33%",
+    suggestedBid: 6,
+    why: "20%+ target share three straight weeks. A steady bye-week WR with the ATL passing volume trending up.",
+    tags: [{ label: "BYE-WEEK COVER" }],
+    dropSuggestion: "R. DOUBS",
   },
   {
-    id: "3",
-    title: "The Priory of the Orange Tree",
-    author: "Samantha Shannon",
-    narrator: "Katie Scarfe",
-    duration: "27h 24m",
-    rating: 4.5,
-    reviews: 34521,
-    description:
-      "A world divided. A queendom without an heir. An ancient enemy awakens.",
-    coverUrl:
-      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=600&fit=crop",
-    genre: "High Fantasy",
-  },
-  {
-    id: "4",
-    title: "The Fifth Season",
-    author: "N.K. Jemisin",
-    narrator: "Robin Miles",
-    series: "The Broken Earth",
-    seriesNumber: 1,
-    duration: "15h 54m",
-    rating: 4.7,
-    reviews: 67890,
-    description:
-      "This is the way the world ends. For the last time. A woman searches for her daughter in a world of constant seismic catastrophe.",
-    coverUrl:
-      "https://images.unsplash.com/photo-1495446815901-a7297e633e8d?w=400&h=600&fit=crop",
-    genre: "Dark Fantasy",
-  },
-  {
-    id: "5",
-    title: "The Lies of Locke Lamora",
-    author: "Scott Lynch",
-    narrator: "Michael Page",
-    series: "Gentleman Bastard",
-    seriesNumber: 1,
-    duration: "21h 58m",
-    rating: 4.6,
-    reviews: 45678,
-    description:
-      "An orphan's life is hard, but when you're a member of the Gentlemen Bastards, it's also dangerous.",
-    coverUrl:
-      "https://images.unsplash.com/photo-1589998055856-a0abc5359b1a?w=400&h=600&fit=crop",
-    genre: "Grimdark",
-  },
-  {
-    id: "6",
-    title: "Daughter of the Moon Goddess",
-    author: "Sue Lynn Tan",
-    narrator: "Natalie Naudus",
-    duration: "17h 32m",
-    rating: 4.4,
-    reviews: 23456,
-    description:
-      "Inspired by the legend of Chang'e, this is a young woman's quest to free her mother and become a goddess.",
-    coverUrl:
-      "https://images.unsplash.com/photo-1519682337058-a94d519337bc?w=400&h=600&fit=crop",
-    genre: "High Fantasy",
-  },
-  {
-    id: "7",
-    title: "City of Stairs",
-    author: "Robert Jackson Bennett",
-    narrator: "Susan Duerden",
-    series: "Divine Cities",
-    seriesNumber: 1,
-    duration: "13h 45m",
-    rating: 4.3,
-    reviews: 18934,
-    description:
-      "In a city where the gods once walked, a spy uncovers a conspiracy that could reignite a holy war.",
-    coverUrl:
-      "https://images.unsplash.com/photo-1476275466078-4007374efbbe?w=400&h=600&fit=crop",
-    genre: "Urban Fantasy",
-  },
-  {
-    id: "8",
-    title: "The Poppy War",
-    author: "R.F. Kuang",
-    narrator: "Emily Woo Zeller",
-    series: "The Poppy War",
-    seriesNumber: 1,
-    duration: "18h 56m",
-    rating: 4.6,
-    reviews: 56789,
-    description:
-      "A war orphan rises through the ranks of an elite military academy, only to discover the true cost of power.",
-    coverUrl:
-      "https://images.unsplash.com/photo-1457369804613-52c61a468e7d?w=400&h=600&fit=crop",
-    genre: "Grimdark",
+    name: "Cade Otton",
+    position: "TE",
+    team: "TB",
+    rostered: "18%",
+    suggestedBid: 2,
+    why: "Streaming option only — skip unless McBride's workload dips. Red-zone looks up, but low weekly floor.",
+    tags: [{ label: "LOW PRIORITY", variant: "red" }],
   },
 ];
+
+export const startSitComparison = {
+  playerA: {
+    initials: "PN",
+    name: "Puka Nacua",
+    position: "WR",
+    team: "LAR",
+    matchup: "vs SEA",
+    isWinner: true,
+  },
+  playerB: {
+    initials: "ZF",
+    name: "Zay Flowers",
+    position: "WR",
+    team: "BAL",
+    matchup: "vs CIN",
+    isWinner: false,
+  },
+  stats: [
+    { label: "Proj (Half PPR)", a: "16.8", b: "13.2", winner: "a" as "a" | "b" | null },
+    { label: "Avg L4 Weeks", a: "15.4", b: "12.1", winner: "a" as "a" | "b" | null },
+    { label: "Target Share", a: "27%", b: "21%", winner: "a" as "a" | "b" | null },
+    { label: "Opp Rank vs WR", a: "#4", b: "#22", winner: "a" as "a" | "b" | null },
+    { label: "Injury Status", a: "—", b: "—", winner: null as "a" | "b" | null },
+  ],
+  verdict: "Better volume, softer matchup, higher floor and ceiling. High confidence.",
+};
