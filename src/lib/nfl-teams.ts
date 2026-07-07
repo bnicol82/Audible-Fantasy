@@ -89,25 +89,31 @@ export function applyTeamTheme(team: NflTeam, mode: ColorMode) {
     root.style.setProperty("--btn-primary-text", getContrastText(primary));
     root.style.setProperty("--app-bg", "#ffffff");
     root.style.setProperty("--tabbar-bg", "#ffffff");
+    root.style.setProperty("--text-on-card", "var(--text)");
+    root.style.setProperty("--text-on-card-muted", "var(--text-muted)");
+    root.style.setProperty("--text-on-card-subtle", "var(--text-subtle)");
+    root.style.setProperty("--line-on-card", "var(--line-thin)");
   } else {
-    // Away jersey: rich dark team base, thick white + color accents
+    // Away jersey: dark team field, light cards with dark readable text
     const darkBase = getAwayBase(team);
-    const darkCard = lighten(darkBase, 0.08);
-    const darkRaised = lighten(darkBase, 0.14);
 
     root.style.setProperty("--surface", darkBase);
-    root.style.setProperty("--surface-card", darkCard);
-    root.style.setProperty("--surface-raised", darkRaised);
+    root.style.setProperty("--surface-card", "#ffffff");
+    root.style.setProperty("--surface-raised", "#f4f4f1");
     root.style.setProperty("--text", "#ffffff");
     root.style.setProperty("--text-muted", "rgba(255, 255, 255, 0.72)");
     root.style.setProperty("--text-subtle", "rgba(255, 255, 255, 0.45)");
+    root.style.setProperty("--text-on-card", "#121412");
+    root.style.setProperty("--text-on-card-muted", "rgba(18, 20, 18, 0.68)");
+    root.style.setProperty("--text-on-card-subtle", "rgba(18, 20, 18, 0.42)");
     root.style.setProperty("--line-thin", "rgba(255, 255, 255, 0.14)");
+    root.style.setProperty("--line-on-card", "rgba(18, 20, 18, 0.1)");
     root.style.setProperty("--stripe-a", "#ffffff");
     root.style.setProperty("--stripe-b", secondary);
     root.style.setProperty("--stripe-accent", primary);
     root.style.setProperty("--accent", primary);
     root.style.setProperty("--accent-alt", secondary);
-    root.style.setProperty("--accent-dim", hexAlpha(primary, 0.22));
+    root.style.setProperty("--accent-dim", hexAlpha(primary, 0.12));
     root.style.setProperty("--btn-primary-text", getContrastText(primary));
     root.style.setProperty("--app-bg", darkBase);
     root.style.setProperty("--tabbar-bg", darken(darkBase, 0.15));
@@ -155,10 +161,6 @@ function mixHex(a: string, b: string, weight: number) {
 
 function darken(hex: string, amount: number) {
   return mixHex(hex, "#000000", 1 - amount);
-}
-
-function lighten(hex: string, amount: number) {
-  return mixHex(hex, "#ffffff", amount);
 }
 
 function parseHex(hex: string) {

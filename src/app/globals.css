@@ -153,8 +153,65 @@ button {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
-[data-mode="away"] .card {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+/* Away mode: light cards on dark field — remap chalk vars so nested text stays dark */
+[data-mode="away"] .card,
+[data-mode="away"] .rollup,
+[data-mode="away"] .bubble,
+[data-mode="away"] .cmp,
+[data-mode="away"] .plan,
+[data-mode="away"] .inputbar,
+[data-mode="away"] .btn:not(.primary),
+[data-mode="away"] .connect-input,
+[data-mode="away"] .mode-btn,
+[data-mode="away"] .team-card.selected {
+  --chalk: var(--text-on-card);
+  --chalk-60: var(--text-on-card-muted);
+  --chalk-35: var(--text-on-card-subtle);
+  --line: var(--line-on-card);
+  --text: var(--text-on-card);
+  color: var(--text-on-card);
+}
+
+[data-mode="away"] .card,
+[data-mode="away"] .rollup,
+[data-mode="away"] .bubble.ai,
+[data-mode="away"] .cmp,
+[data-mode="away"] .plan,
+[data-mode="away"] .inputbar,
+[data-mode="away"] .btn:not(.primary),
+[data-mode="away"] .connect-input,
+[data-mode="away"] .mode-btn,
+[data-mode="away"] .team-card.selected {
+  background: var(--surface-card);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+}
+
+[data-mode="away"] .bubble.user {
+  background: var(--surface-raised);
+}
+
+[data-mode="away"] .body {
+  background: var(--surface);
+  color: var(--text);
+}
+
+[data-mode="away"] .card .slotrow,
+[data-mode="away"] .card .cmprow,
+[data-mode="away"] .card .menu-item {
+  border-bottom-color: var(--line-on-card);
+}
+
+[data-mode="away"] .card .mini b,
+[data-mode="away"] .card .score b,
+[data-mode="away"] .card .faab,
+[data-mode="away"] .rollup b,
+[data-mode="away"] .rollup .fl {
+  color: var(--accent);
+}
+
+[data-mode="away"] .winprob {
+  background: var(--surface-raised);
+  border-color: var(--line-on-card);
 }
 
 .pill {
@@ -398,10 +455,6 @@ button {
   flex: 1;
   overflow: auto;
   min-height: 0;
-}
-
-[data-mode="away"] .body {
-  background: var(--surface);
 }
 
 .slotrow {
