@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0a0a0f;
+  --foreground: #f4f0e8;
+  --accent: #c9a227;
+  --accent-muted: #8b6914;
+  --card: #14141f;
+  --card-border: #2a2a3d;
+  --muted: #9b95a8;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-accent: var(--accent);
+  --color-accent-muted: var(--accent-muted);
+  --color-card: var(--card);
+  --color-card-border: var(--card-border);
+  --color-muted: var(--muted);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-cinzel);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+.bg-fantasy-gradient {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(201, 162, 39, 0.15), transparent),
+    radial-gradient(ellipse 60% 40% at 100% 100%, rgba(88, 28, 135, 0.12), transparent),
+    var(--background);
+}
+
+.glow-accent {
+  box-shadow: 0 0 40px rgba(201, 162, 39, 0.15);
+}
+
+.book-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4), 0 0 20px rgba(201, 162, 39, 0.1);
+}
+
+.book-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
