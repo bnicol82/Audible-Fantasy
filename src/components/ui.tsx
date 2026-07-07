@@ -1,16 +1,16 @@
 import type { ReactNode } from "react";
 
-export function PhoneFrame({ children }: { children: ReactNode }) {
+export function AppShell({
+  children,
+  tabBar,
+}: {
+  children: ReactNode;
+  tabBar?: ReactNode;
+}) {
   return (
-    <div className="phone">
-      <div className="screen">
-        <div className="notch" />
-        <div className="status">
-          <span>9:41</span>
-          <span>●●●</span>
-        </div>
-        {children}
-      </div>
+    <div className="app-shell">
+      <main className="app-main">{children}</main>
+      {tabBar}
     </div>
   );
 }
@@ -83,7 +83,7 @@ export function TabBar({
   ];
 
   return (
-    <div className="tabbar" style={dimmed ? { opacity: 0.25 } : undefined}>
+    <nav className="tabbar" style={dimmed ? { opacity: 0.35 } : undefined}>
       {tabs.map((tab) => (
         <button
           key={tab.id}
@@ -95,6 +95,6 @@ export function TabBar({
           {tab.label}
         </button>
       ))}
-    </div>
+    </nav>
   );
 }

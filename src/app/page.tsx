@@ -1,39 +1,64 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AskScreen } from "@/components/AskScreen";
 import { ConnectScreen } from "@/components/ConnectScreen";
 import { MoreScreen } from "@/components/MoreScreen";
 import { MyTeamScreen } from "@/components/MyTeamScreen";
+import { OnboardingScreen } from "@/components/OnboardingScreen";
 import { PaywallScreen } from "@/components/PaywallScreen";
 import { ProDashboardScreen } from "@/components/ProDashboardScreen";
 import { StartSitScreen } from "@/components/StartSitScreen";
-import { PhoneFrame, TabBar } from "@/components/ui";
+import { AppShell, TabBar } from "@/components/ui";
 import { WaiversScreen } from "@/components/WaiversScreen";
+import { STORAGE_KEYS, type NflTeam } from "@/lib/nfl-teams";
+import { useTheme } from "@/lib/theme/ThemeProvider";
 
 type Tab = "team" | "ask" | "waivers" | "more";
 type View = "connect" | Tab | "startsit" | "paywall" | "team-detail";
 
 export default function Home() {
+  const { setTeam } = useTheme();
+  const [onboarded, setOnboarded] = useState(false);
   const [connected, setConnected] = useState(false);
   const [isPro, setIsPro] = useState(false);
   const [view, setView] = useState<View>("connect");
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    setOnboarded(localStorage.getItem(STORAGE_KEYS.onboarded) === "true");
+    setConnected(localStorage.getItem(STORAGE_KEYS.connected) === "true");
+    setIsPro(localStorage.getItem(STORAGE_KEYS.isPro) === "true");
+    setHydrated(true);
+  }, []);
+
+  const handleOnboardingComplete = (team: NflTeam) => {
+    setTeam(team);
+    localStorage.setItem(STORAGE_KEYS.onboarded, "true");
+    localStorage.setItem(STORAGE_KEYS.team, team.id);
+    setOnboarded(true);
+    setView("connect");
+  };
 
   const handleConnect = () => {
+    localStorage.setItem(STORAGE_KEYS.connected, "true");
     setConnected(true);
     setView("team");
   };
 
+  const handleDisconnect = () => {
+    localStorage.removeItem(STORAGE_KEYS.connected);
+    setConnected(false);
+    setView("connect");
+  };
+
   const handleStartTrial = () => {
+    localStorage.setItem(STORAGE_KEYS.isPro, "true");
     setIsPro(true);
     setView("team");
   };
 
   const handleTabChange = (tab: string) => {
-    if (tab === "team" && isPro) {
-      setView("team");
-      return;
-    }
     setView(tab as Tab);
   };
 
@@ -45,9 +70,13 @@ export default function Home() {
       ? "team"
       : view;
 
-  const tabDimmed = !connected || view === "paywall";
+  const showTabBar = connected && view !== "paywall" && view !== "connect";
 
   function renderScreen() {
+    if (!onboarded) {
+      return <OnboardingScreen onComplete={handleOnboardingComplete} />;
+    }
+
     if (!connected) {
       return <ConnectScreen onConnect={handleConnect} />;
     }
@@ -75,32 +104,29 @@ export default function Home() {
             onStartSit={() => setView("startsit")}
             onPaywall={() => setView("paywall")}
             isPro={isPro}
+            onDisconnect={handleDisconnect}
           />
         );
       default:
-        if (isPro) {
-          return (
-            <ProDashboardScreen onSelectTeam={() => setView("team-detail")} />
-          );
-        }
-        return <MyTeamScreen onStartSit={() => setView("startsit")} />;
+        return isPro ? (
+          <ProDashboardScreen onSelectTeam={() => setView("team-detail")} />
+        ) : (
+          <MyTeamScreen onStartSit={() => setView("startsit")} />
+        );
     }
   }
 
+  if (!hydrated) return null;
+
   return (
-    <main className="page-wrap">
-      <p className="page-eyebrow">
-        Concept v2 · {isPro ? "Pro Dashboard" : "Night-Game Direction"}
-      </p>
-      <PhoneFrame>
-        {renderScreen()}
-        <TabBar
-          active={activeTab}
-          onChange={connected ? handleTabChange : () => {}}
-          dimmed={tabDimmed}
-          isPro={isPro}
-        />
-      </PhoneFrame>
-    </main>
+    <AppShell
+      tabBar={
+        showTabBar ? (
+          <TabBar active={activeTab} onChange={handleTabChange} isPro={isPro} />
+        ) : undefined
+      }
+    >
+      {renderScreen()}
+    </AppShell>
   );
 }

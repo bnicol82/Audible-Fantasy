@@ -4,7 +4,7 @@
   "description": "Your team, your scoring, real answers. Connect a league and ask anything.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0A130E",
+  "background_color": "#0C1A12",
   "theme_color": "#0C1A12",
   "orientation": "portrait-primary",
   "icons": [
