@@ -24,6 +24,12 @@ export const metadata: Metadata = {
   title: "Audible — Fantasy Football Assistant",
   description:
     "Your team, your scoring, real answers. Connect a league and ask anything.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Audible",
+  },
 };
 
 export default function RootLayout({

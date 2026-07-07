@@ -1,45 +1,64 @@
 # Audible
 
-**Fantasy football assistant** — connect your league, ask grounded AI questions, compare start/sit decisions, and get waiver recommendations.
+**Fantasy football AI assistant** — connect your league, ask grounded questions, set lineups, work waivers, evaluate trades.
 
-## Live Demo
+## Live Demo (UI mockups)
 
 **https://bnicol82.github.io/Audible-Fantasy/**
 
+## Product
+
+Audible is your fantasy team's second brain. Unlike generic chatbots, every AI answer is grounded in **your** roster, **your** scoring settings, and **this week's** matchups.
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full product & technical plan.
+
 ## Screens
 
-### Core (v1)
-1. **Connect league** — Sleeper, Yahoo, ESPN
-2. **My Team** — Roster dashboard with projections and win probability
-3. **Ask Audible** — Grounded AI chat that knows your roster and scoring
-4. **Start / Sit** — Side-by-side player comparison with verdict
-5. **Waivers** — FAAB bid suggestions tailored to your roster
-
-### Monetization (v2)
-6. **Paywall** — Free vs Pro comparison, season pass pricing, Stripe checkout
-7. **Pro Dashboard** — Multi-league triage view across all synced teams
-
-## Design
-
-Night-game direction: turf-dark surfaces, chalk-line dividers, penalty-flag gold for decisions. Barlow Condensed headers, IBM Plex Mono scoreboard data.
+| # | Screen | Status |
+|---|--------|--------|
+| 01 | Connect league | UI + Sleeper API route |
+| 02 | My Team | UI mockup |
+| 03 | Ask Audible | UI mockup |
+| 04 | Start / Sit | UI mockup |
+| 05 | Waivers | UI mockup |
+| 06 | Paywall | UI mockup |
+| 07 | Pro Dashboard | UI mockup |
 
 ## Local Development
 
 ```bash
+cp .env.example .env.local
+# Add NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, ANTHROPIC_API_KEY
+
 npm install
 npm run dev
 ```
 
-## Deployment
-
-Pushes to `main` auto-deploy via GitHub Actions to GitHub Pages.
+## Database
 
 ```bash
-GITHUB_PAGES=true npm run build
+# Apply migrations to your Supabase project
+supabase db push
 ```
+
+Schema: `supabase/migrations/20260707000000_initial_schema.sql`
+
+## Deployment
+
+| Target | Use case |
+|--------|----------|
+| **GitHub Pages** | Static UI mockups (auto-deploy on push to `main`) |
+| **Vercel** | Full app with API routes, Supabase, AI chat |
+
+### Vercel setup
+
+1. Link repo at [vercel.com](https://vercel.com)
+2. Add env vars from `.env.example`
+3. Set `VERCEL_DEPLOY_ENABLED=true` in GitHub repo variables for CI deploy
 
 ## Tech Stack
 
-- Next.js 15
-- React 19
-- TypeScript
+- Next.js 15 · React 19 · TypeScript
+- Supabase (Postgres, Auth, RLS)
+- Anthropic API (Claude with tool use)
+- Sleeper API (league sync)

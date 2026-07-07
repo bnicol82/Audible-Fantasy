@@ -301,6 +301,35 @@ button {
   border-bottom: 1px solid var(--chalk-35);
 }
 
+.connect-input {
+  width: 100%;
+  background: var(--turf-2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px 16px;
+  color: var(--chalk);
+  font-family: var(--font-mono), monospace;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.connect-input::placeholder {
+  color: var(--chalk-35);
+}
+
+.connect-input:focus {
+  outline: none;
+  border-color: rgba(255, 197, 61, 0.5);
+}
+
+.connect-error {
+  font-family: var(--font-mono), monospace;
+  font-size: 11px;
+  color: var(--down);
+  margin-bottom: 8px;
+  letter-spacing: 0.06em;
+}
+
 /* ---------- roster ---------- */
 .matchbar {
   display: flex;
