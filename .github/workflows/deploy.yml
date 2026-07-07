@@ -1,6 +1,7 @@
 name: Deploy to Vercel
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
   pull_request:
@@ -13,7 +14,8 @@ env:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    if: ${{ secrets.VERCEL_TOKEN != '' }}
+    # Only run when Vercel secrets are configured in repository settings
+    if: ${{ github.repository == 'bnicol82/Audible-Fantasy' && vars.VERCEL_DEPLOY_ENABLED == 'true' }}
 
     steps:
       - name: Checkout
