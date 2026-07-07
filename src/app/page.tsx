@@ -15,20 +15,33 @@ import { STORAGE_KEYS, type NflTeam } from "@/lib/nfl-teams";
 import { useTheme } from "@/lib/theme/ThemeProvider";
 
 type Tab = "team" | "ask" | "waivers" | "more";
-type View = "connect" | Tab | "startsit" | "paywall" | "team-detail";
+type View = Tab | "startsit" | "paywall" | "team-detail";
+
+/** Set to true when Sleeper/Yahoo league import is ready */
+const LEAGUE_IMPORT_ENABLED = false;
 
 export default function Home() {
   const { setTeam } = useTheme();
   const [onboarded, setOnboarded] = useState(false);
   const [connected, setConnected] = useState(false);
   const [isPro, setIsPro] = useState(false);
-  const [view, setView] = useState<View>("connect");
+  const [view, setView] = useState<View>("team");
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    setOnboarded(localStorage.getItem(STORAGE_KEYS.onboarded) === "true");
-    setConnected(localStorage.getItem(STORAGE_KEYS.connected) === "true");
+    const wasOnboarded = localStorage.getItem(STORAGE_KEYS.onboarded) === "true";
+    setOnboarded(wasOnboarded);
     setIsPro(localStorage.getItem(STORAGE_KEYS.isPro) === "true");
+
+    if (!LEAGUE_IMPORT_ENABLED) {
+      setConnected(wasOnboarded);
+      if (wasOnboarded) {
+        localStorage.setItem(STORAGE_KEYS.connected, "true");
+      }
+    } else {
+      setConnected(localStorage.getItem(STORAGE_KEYS.connected) === "true");
+    }
+
     setHydrated(true);
   }, []);
 
@@ -37,7 +50,11 @@ export default function Home() {
     localStorage.setItem(STORAGE_KEYS.onboarded, "true");
     localStorage.setItem(STORAGE_KEYS.team, team.id);
     setOnboarded(true);
-    setView("connect");
+    if (!LEAGUE_IMPORT_ENABLED) {
+      localStorage.setItem(STORAGE_KEYS.connected, "true");
+      setConnected(true);
+    }
+    setView("team");
   };
 
   const handleConnect = () => {
@@ -47,9 +64,10 @@ export default function Home() {
   };
 
   const handleDisconnect = () => {
-    localStorage.removeItem(STORAGE_KEYS.connected);
-    setConnected(false);
-    setView("connect");
+    if (LEAGUE_IMPORT_ENABLED) {
+      localStorage.removeItem(STORAGE_KEYS.connected);
+      setConnected(false);
+    }
   };
 
   const handleStartTrial = () => {
@@ -63,21 +81,18 @@ export default function Home() {
   };
 
   const activeTab: Tab =
-    view === "startsit" ||
-    view === "connect" ||
-    view === "paywall" ||
-    view === "team-detail"
+    view === "startsit" || view === "paywall" || view === "team-detail"
       ? "team"
       : view;
 
-  const showTabBar = connected && view !== "paywall" && view !== "connect";
+  const showTabBar = onboarded && connected && view !== "paywall";
 
   function renderScreen() {
     if (!onboarded) {
       return <OnboardingScreen onComplete={handleOnboardingComplete} />;
     }
 
-    if (!connected) {
+    if (LEAGUE_IMPORT_ENABLED && !connected) {
       return <ConnectScreen onConnect={handleConnect} />;
     }
 
@@ -104,7 +119,7 @@ export default function Home() {
             onStartSit={() => setView("startsit")}
             onPaywall={() => setView("paywall")}
             isPro={isPro}
-            onDisconnect={handleDisconnect}
+            onDisconnect={LEAGUE_IMPORT_ENABLED ? handleDisconnect : undefined}
           />
         );
       default:
