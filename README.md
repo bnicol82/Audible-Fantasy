@@ -8,11 +8,16 @@
 
 ## Screens
 
+### Core (v1)
 1. **Connect league** — Sleeper, Yahoo, ESPN
 2. **My Team** — Roster dashboard with projections and win probability
 3. **Ask Audible** — Grounded AI chat that knows your roster and scoring
 4. **Start / Sit** — Side-by-side player comparison with verdict
 5. **Waivers** — FAAB bid suggestions tailored to your roster
+
+### Monetization (v2)
+6. **Paywall** — Free vs Pro comparison, season pass pricing, Stripe checkout
+7. **Pro Dashboard** — Multi-league triage view across all synced teams
 
 ## Design
 

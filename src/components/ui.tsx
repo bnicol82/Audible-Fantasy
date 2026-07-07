@@ -18,14 +18,16 @@ export function PhoneFrame({ children }: { children: ReactNode }) {
 export function AppHead({
   title,
   badge,
+  badgeNode,
 }: {
   title: string;
-  badge: string;
+  badge?: string;
+  badgeNode?: ReactNode;
 }) {
   return (
     <div className="apphead">
       <h2>{title}</h2>
-      <span className="wk">{badge}</span>
+      {badgeNode ?? <span className="wk">{badge}</span>}
     </div>
   );
 }
@@ -66,13 +68,15 @@ export function TabBar({
   active,
   onChange,
   dimmed = false,
+  isPro = false,
 }: {
   active: string;
   onChange: (tab: string) => void;
   dimmed?: boolean;
+  isPro?: boolean;
 }) {
   const tabs = [
-    { id: "team", label: "Team" },
+    { id: "team", label: isPro ? "Teams" : "Team" },
     { id: "ask", label: "Ask" },
     { id: "waivers", label: "Waivers" },
     { id: "more", label: "More" },

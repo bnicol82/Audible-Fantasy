@@ -113,3 +113,88 @@ export const startSitComparison = {
   ],
   verdict: "Better volume, softer matchup, higher floor and ceiling. High confidence.",
 };
+
+export type ProTeam = {
+  id: string;
+  leagueName: string;
+  platform: string;
+  scoring: string;
+  teamName: string;
+  record: string;
+  yourProjection: number;
+  opponentProjection: number;
+  winProbability: number;
+  kickoff: string;
+  losing?: boolean;
+  tags: { label: string; variant?: "gold" | "red" }[];
+};
+
+export const proTeams: ProTeam[] = [
+  {
+    id: "gauntlet",
+    leagueName: "The Gauntlet",
+    platform: "SLEEPER",
+    scoring: "HALF PPR",
+    teamName: "BILLY'S BANDITS",
+    record: "3–1",
+    yourProjection: 118.4,
+    opponentProjection: 112.7,
+    winProbability: 57,
+    kickoff: "SUN 1:00",
+    tags: [
+      { label: "1 LINEUP QUESTION", variant: "gold" },
+      { label: "GIBBS Q · ANKLE" },
+    ],
+  },
+  {
+    id: "office",
+    leagueName: "Office League",
+    platform: "YAHOO",
+    scoring: "PPR",
+    teamName: "TEAM BILLY",
+    record: "2–2",
+    yourProjection: 104.2,
+    opponentProjection: 121.8,
+    winProbability: 34,
+    kickoff: "SUN 1:00",
+    losing: true,
+    tags: [
+      { label: "UNDERDOG — SWING FOR CEILING", variant: "red" },
+      { label: "1 LINEUP QUESTION", variant: "gold" },
+    ],
+  },
+  {
+    id: "dynasty",
+    leagueName: "Dynasty Degens",
+    platform: "SLEEPER",
+    scoring: "SUPERFLEX",
+    teamName: "BANDITS DYNASTY",
+    record: "4–0",
+    yourProjection: 131.6,
+    opponentProjection: 109.3,
+    winProbability: 71,
+    kickoff: "SUN 4:25",
+    tags: [{ label: "LINEUP SET ✓" }, { label: "2 WAIVER TARGETS", variant: "gold" }],
+  },
+];
+
+export const paywallFeatures = [
+  { feature: "Leagues synced", free: "1", pro: "∞" },
+  { feature: "AI messages", free: "10/WK", pro: "∞" },
+  { feature: "Waiver FAAB bids", free: "—", pro: "✓" },
+  { feature: "Trade analyzer", free: "—", pro: "✓" },
+  { feature: "Injury push alerts", free: "—", pro: "✓" },
+];
+
+export const paywallPlans = [
+  { id: "monthly", label: "Monthly", price: "$4.99", detail: "CANCEL ANYTIME", hero: false },
+  {
+    id: "season",
+    label: "Season Pass",
+    price: "$24.99",
+    detail: "AUG–JAN · ≈$4.17/MO",
+    hero: true,
+    badge: "⚑ BEST VALUE",
+  },
+  { id: "annual", label: "Annual", price: "$39.99", detail: "≈$3.33/MO", hero: false },
+];
