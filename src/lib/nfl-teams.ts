@@ -68,8 +68,8 @@ export function applyTeamTheme(team: NflTeam, mode: ColorMode) {
   root.style.setProperty("--team-primary", primary);
   root.style.setProperty("--team-secondary", secondary);
   root.style.setProperty("--stripe-bar", stripe);
-  root.style.setProperty("--stripe-thick", "5px");
-  root.style.setProperty("--stripe-medium", "4px");
+  root.style.setProperty("--stripe-thick", "8px");
+  root.style.setProperty("--stripe-medium", "6px");
 
   if (mode === "home") {
     // White jersey: clean white field, bold team-color stripes & accents
@@ -79,7 +79,7 @@ export function applyTeamTheme(team: NflTeam, mode: ColorMode) {
     root.style.setProperty("--text", "#121412");
     root.style.setProperty("--text-muted", "rgba(18, 20, 18, 0.68)");
     root.style.setProperty("--text-subtle", "rgba(18, 20, 18, 0.42)");
-    root.style.setProperty("--line-thin", "rgba(18, 20, 18, 0.08)");
+    root.style.setProperty("--line-thin", "rgba(18, 20, 18, 0.18)");
     root.style.setProperty("--stripe-a", primary);
     root.style.setProperty("--stripe-b", secondary);
     root.style.setProperty("--stripe-accent", secondary);
@@ -92,7 +92,19 @@ export function applyTeamTheme(team: NflTeam, mode: ColorMode) {
     root.style.setProperty("--text-on-card", "var(--text)");
     root.style.setProperty("--text-on-card-muted", "var(--text-muted)");
     root.style.setProperty("--text-on-card-subtle", "var(--text-subtle)");
-    root.style.setProperty("--line-on-card", "var(--line-thin)");
+    root.style.setProperty("--line-on-card", "rgba(18, 20, 18, 0.2)");
+    root.style.setProperty("--depth-highlight", "rgba(255, 255, 255, 0.95)");
+    root.style.setProperty("--depth-shadow", "rgba(0, 0, 0, 0.1)");
+    root.style.setProperty("--depth-shadow-strong", "rgba(0, 0, 0, 0.18)");
+    root.style.setProperty(
+      "--shadow-card",
+      "0 1px 0 var(--depth-highlight) inset, 0 3px 0 var(--depth-shadow), 0 10px 24px var(--depth-shadow-strong)"
+    );
+    root.style.setProperty(
+      "--shadow-raised",
+      "0 2px 0 var(--depth-highlight) inset, 0 5px 0 var(--depth-shadow), 0 16px 36px var(--depth-shadow-strong)"
+    );
+    root.style.setProperty("--shadow-surface", "0 -8px 24px rgba(0, 0, 0, 0.1)");
   } else {
     // Away jersey: dark team field, light cards with dark readable text
     const darkBase = getAwayBase(team);
@@ -106,8 +118,8 @@ export function applyTeamTheme(team: NflTeam, mode: ColorMode) {
     root.style.setProperty("--text-on-card", "#121412");
     root.style.setProperty("--text-on-card-muted", "rgba(18, 20, 18, 0.68)");
     root.style.setProperty("--text-on-card-subtle", "rgba(18, 20, 18, 0.42)");
-    root.style.setProperty("--line-thin", "rgba(255, 255, 255, 0.14)");
-    root.style.setProperty("--line-on-card", "rgba(18, 20, 18, 0.1)");
+    root.style.setProperty("--line-thin", "rgba(255, 255, 255, 0.28)");
+    root.style.setProperty("--line-on-card", "rgba(18, 20, 18, 0.22)");
     root.style.setProperty("--stripe-a", "#ffffff");
     root.style.setProperty("--stripe-b", secondary);
     root.style.setProperty("--stripe-accent", primary);
@@ -117,6 +129,18 @@ export function applyTeamTheme(team: NflTeam, mode: ColorMode) {
     root.style.setProperty("--btn-primary-text", getContrastText(primary));
     root.style.setProperty("--app-bg", darkBase);
     root.style.setProperty("--tabbar-bg", darken(darkBase, 0.15));
+    root.style.setProperty("--depth-highlight", "rgba(255, 255, 255, 0.88)");
+    root.style.setProperty("--depth-shadow", "rgba(0, 0, 0, 0.22)");
+    root.style.setProperty("--depth-shadow-strong", "rgba(0, 0, 0, 0.45)");
+    root.style.setProperty(
+      "--shadow-card",
+      "0 2px 0 var(--depth-highlight) inset, 0 4px 0 var(--depth-shadow), 0 14px 36px var(--depth-shadow-strong)"
+    );
+    root.style.setProperty(
+      "--shadow-raised",
+      "0 2px 0 var(--depth-highlight) inset, 0 6px 0 var(--depth-shadow), 0 20px 48px var(--depth-shadow-strong)"
+    );
+    root.style.setProperty("--shadow-surface", "0 -10px 32px rgba(0, 0, 0, 0.45)");
   }
 
   // Legacy aliases used across components

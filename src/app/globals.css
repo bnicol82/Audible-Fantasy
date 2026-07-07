@@ -16,6 +16,15 @@
   --app-bg: #0a130e;
   --team-primary: #00338d;
   --team-secondary: #c60c30;
+  --border-width: 2px;
+  --border-width-thick: 3px;
+  --depth-highlight: rgba(255, 255, 255, 0.72);
+  --depth-shadow: rgba(0, 0, 0, 0.14);
+  --depth-shadow-strong: rgba(0, 0, 0, 0.28);
+  --shadow-card: 0 1px 0 var(--depth-highlight) inset, 0 2px 0 var(--depth-shadow), 0 8px 20px var(--depth-shadow);
+  --shadow-raised: 0 1px 0 var(--depth-highlight) inset, 0 4px 0 var(--depth-shadow), 0 14px 32px var(--depth-shadow-strong);
+  --shadow-surface: 0 -6px 20px rgba(0, 0, 0, 0.12);
+  --shadow-inset: inset 0 2px 4px rgba(0, 0, 0, 0.08);
 }
 
 * {
@@ -60,9 +69,10 @@ button {
 .app-shell::before {
   content: "";
   display: block;
-  height: var(--stripe-medium, 4px);
+  height: var(--stripe-medium, 6px);
   background: var(--stripe-bar);
   flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
 
 .app-main {
@@ -121,9 +131,10 @@ button {
 
 .hash i {
   flex: 1;
-  height: var(--stripe-medium, 4px);
+  height: var(--stripe-medium, 6px);
   font-style: normal;
-  border-radius: 2px;
+  border-radius: 3px;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.2) inset, 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 [data-mode="home"] .hash i:first-child {
@@ -144,13 +155,13 @@ button {
 
 .card {
   background: var(--surface-card);
-  border: 1px solid var(--line-thin);
+  border: var(--border-width) solid var(--line-thin);
   border-radius: 14px;
   padding: 14px;
   margin-bottom: 10px;
-  border-left: var(--stripe-thick, 5px) solid var(--stripe-a);
-  border-top: var(--stripe-medium, 4px) solid var(--stripe-b);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  border-left: var(--stripe-thick, 8px) solid var(--stripe-a);
+  border-top: var(--stripe-medium, 6px) solid var(--stripe-b);
+  box-shadow: var(--shadow-card);
 }
 
 /* Away mode: light cards on dark field — remap chalk vars so nested text stays dark */
@@ -183,7 +194,7 @@ button {
 [data-mode="away"] .mode-btn,
 [data-mode="away"] .team-card.selected {
   background: var(--surface-card);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow-raised);
 }
 
 [data-mode="away"] .bubble.user {
@@ -219,18 +230,20 @@ button {
   font-family: var(--font-mono), monospace;
   font-size: 9.5px;
   letter-spacing: 0.1em;
-  padding: 3px 8px;
+  padding: 4px 9px;
   border-radius: 99px;
-  border: 1px solid var(--line);
+  border: var(--border-width) solid var(--line-thin);
   color: var(--chalk-60);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset;
 }
 
 .pill.gold {
   background: var(--accent-dim);
-  border: 2px solid var(--accent);
+  border: var(--border-width-thick) solid var(--accent);
   border-radius: 99px;
   color: var(--accent);
   font-weight: 600;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.2) inset, 0 2px 6px rgba(0, 0, 0, 0.12);
 }
 
 .pill.red {
@@ -251,6 +264,8 @@ button {
   text-transform: uppercase;
   flex-shrink: 0;
   position: relative;
+  box-shadow: var(--shadow-surface);
+  border-top: var(--border-width) solid var(--line-thin);
 }
 
 .tabbar::before {
@@ -259,8 +274,9 @@ button {
   top: 0;
   left: 0;
   right: 0;
-  height: var(--stripe-thick, 5px);
+  height: var(--stripe-thick, 8px);
   background: var(--stripe-bar);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 .tabbar button {
@@ -271,11 +287,12 @@ button {
 }
 
 .tabbar .ico {
-  width: 20px;
-  height: 20px;
-  border: 1.5px solid currentColor;
+  width: 22px;
+  height: 22px;
+  border: var(--border-width) solid currentColor;
   border-radius: 6px;
-  opacity: 0.8;
+  opacity: 0.85;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.12) inset;
 }
 
 .tabbar .on {
@@ -283,9 +300,10 @@ button {
 }
 
 .tabbar .on .ico {
-  border-width: 2.5px;
+  border-width: var(--border-width-thick);
   border-color: var(--accent);
   background: var(--accent-dim);
+  box-shadow: 0 0 0 2px var(--accent-dim), 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
 .btn {
@@ -299,17 +317,19 @@ button {
   font-family: var(--font-barlow), sans-serif;
   font-weight: 600;
   font-size: 15px;
-  border: 1px solid var(--line);
+  border: var(--border-width) solid var(--line-thin);
   color: var(--chalk);
   margin-bottom: 10px;
   background: var(--turf-2);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset, 0 3px 0 var(--depth-shadow), 0 6px 14px var(--depth-shadow);
 }
 
 .btn.primary {
   background: var(--accent);
   color: var(--btn-primary-text);
   border: none;
-  border-bottom: var(--stripe-medium, 4px) solid var(--accent-alt);
+  border-bottom: var(--stripe-medium, 6px) solid var(--accent-alt);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.25) inset, 0 4px 0 rgba(0, 0, 0, 0.18), 0 8px 20px rgba(0, 0, 0, 0.2);
 }
 
 .btn .tag {
@@ -366,13 +386,14 @@ button {
 .connect-input {
   width: 100%;
   background: var(--turf-2);
-  border: 1px solid var(--line);
+  border: var(--border-width) solid var(--line-thin);
   border-radius: 12px;
   padding: 14px 16px;
   color: var(--chalk);
   font-family: var(--font-mono), monospace;
   font-size: 14px;
   margin-bottom: 10px;
+  box-shadow: var(--shadow-inset);
 }
 
 .connect-input::placeholder {
@@ -426,12 +447,13 @@ button {
 }
 
 .winprob {
-  height: var(--stripe-medium, 4px);
+  height: var(--stripe-medium, 6px);
   border-radius: 99px;
   background: var(--surface-raised);
   margin-top: 12px;
   overflow: hidden;
-  border: 1px solid var(--line-thin);
+  border: var(--border-width) solid var(--line-thin);
+  box-shadow: var(--shadow-inset);
 }
 
 .winprob i {
@@ -463,7 +485,7 @@ button {
   gap: 10px;
   align-items: center;
   padding: 9px 2px;
-  border-bottom: 2px solid var(--line-thin);
+  border-bottom: var(--border-width-thick) solid var(--line-thin);
 }
 
 .slotrow:last-child {
@@ -532,17 +554,19 @@ button {
   font-size: 13.5px;
   line-height: 1.5;
   margin-bottom: 10px;
+  box-shadow: var(--shadow-card);
 }
 
 .bubble.user {
   background: var(--turf-3);
   margin-left: auto;
   border-bottom-right-radius: 4px;
+  border: var(--border-width) solid var(--line-thin);
 }
 
 .bubble.ai {
   background: var(--turf-2);
-  border: 1px solid var(--line);
+  border: var(--border-width) solid var(--line-thin);
   border-bottom-left-radius: 4px;
 }
 
@@ -573,7 +597,7 @@ button {
   align-items: center;
   margin-top: 10px;
   padding-top: 9px;
-  border-top: 1px dashed var(--line);
+  border-top: var(--border-width) dashed var(--line-thin);
   font-family: var(--font-mono), monospace;
   font-size: 8.5px;
   color: var(--chalk-35);
@@ -595,17 +619,18 @@ button {
   gap: 8px;
   align-items: center;
   background: var(--turf-2);
-  border: 1px solid var(--line);
+  border: var(--border-width) solid var(--line-thin);
   border-radius: 99px;
   padding: 11px 8px 11px 16px;
   margin: 6px 0 10px;
   color: var(--chalk-35);
   font-size: 13px;
+  box-shadow: var(--shadow-inset);
 }
 
 .send {
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   border-radius: 99px;
   background: var(--flag);
   flex: none;
@@ -614,6 +639,8 @@ button {
   justify-content: center;
   color: var(--btn-primary-text);
   font-weight: 700;
+  border-bottom: 3px solid var(--accent-alt, rgba(0, 0, 0, 0.2));
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.3) inset, 0 3px 8px rgba(0, 0, 0, 0.2);
 }
 
 .suggest {
@@ -646,7 +673,7 @@ button {
   height: 56px;
   border-radius: 99px;
   background: var(--turf-3);
-  border: 1px solid var(--line);
+  border: var(--border-width-thick) solid var(--line-thin);
   margin: 0 auto 8px;
   display: flex;
   align-items: center;
@@ -654,11 +681,12 @@ button {
   font-family: var(--font-condensed), sans-serif;
   font-weight: 700;
   font-size: 20px;
+  box-shadow: var(--shadow-card);
 }
 
 .vs .avatar.win {
   border-color: var(--flag);
-  box-shadow: 0 0 0 3px var(--flag-dim);
+  box-shadow: 0 0 0 4px var(--flag-dim), var(--shadow-card);
 }
 
 .vs .nm {
@@ -688,7 +716,7 @@ button {
   gap: 8px;
   align-items: center;
   padding: 8px 0;
-  border-bottom: 1px solid rgba(242, 244, 238, 0.06);
+  border-bottom: var(--border-width) solid var(--line-thin);
   font-family: var(--font-mono), monospace;
 }
 
@@ -722,7 +750,9 @@ button {
   align-items: center;
   gap: 10px;
   margin-top: 2px;
-  border-left: var(--stripe-thick, 5px) solid var(--accent-alt);
+  border-left: var(--stripe-thick, 8px) solid var(--accent-alt);
+  border-bottom: var(--stripe-medium, 6px) solid rgba(0, 0, 0, 0.2);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.2) inset, 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .verdictbar b {
@@ -816,7 +846,7 @@ button {
   align-items: center;
   width: 100%;
   padding: 12px 0;
-  border-bottom: 1px solid rgba(242, 244, 238, 0.06);
+  border-bottom: var(--border-width) solid var(--line-thin);
   font-size: 14px;
   font-weight: 500;
 }
@@ -871,10 +901,11 @@ button {
 
 .cmp {
   background: var(--turf-2);
-  border: 1px solid var(--line);
+  border: var(--border-width) solid var(--line-thin);
   border-radius: 14px;
   padding: 4px 14px;
   margin: 12px 0 10px;
+  box-shadow: var(--shadow-card);
 }
 
 .cmp .row {
@@ -883,7 +914,7 @@ button {
   align-items: center;
   gap: 6px;
   padding: 8px 0;
-  border-bottom: 1px solid rgba(242, 244, 238, 0.06);
+  border-bottom: var(--border-width) solid var(--line-thin);
   font-size: 12px;
 }
 
@@ -930,17 +961,19 @@ button {
 }
 
 .plan {
-  border: 1px solid var(--line);
+  border: var(--border-width) solid var(--line-thin);
   border-radius: 12px;
   padding: 12px 8px;
   text-align: center;
   background: var(--turf-2);
   position: relative;
+  box-shadow: var(--shadow-card);
 }
 
 .plan.hero {
-  border-color: var(--flag);
+  border: var(--border-width-thick) solid var(--flag);
   background: linear-gradient(180deg, var(--flag-dim), var(--turf-2));
+  box-shadow: var(--shadow-raised);
 }
 
 .plan .per {
@@ -1006,8 +1039,10 @@ button {
   font-size: 9px;
   font-weight: 600;
   letter-spacing: 0.14em;
-  padding: 3px 9px;
+  padding: 4px 10px;
   border-radius: 99px;
+  border-bottom: 3px solid rgba(0, 0, 0, 0.2);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.25) inset, 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .teamcard .tophd {
@@ -1067,11 +1102,13 @@ button {
 }
 
 .bar {
-  height: 4px;
+  height: 6px;
   border-radius: 99px;
   background: var(--turf-3);
   overflow: hidden;
   margin-bottom: 9px;
+  border: var(--border-width) solid var(--line-thin);
+  box-shadow: var(--shadow-inset);
 }
 
 .bar i {
@@ -1093,15 +1130,16 @@ button {
 
 .rollup {
   background: var(--surface-raised);
-  border: 1px solid var(--line-thin);
-  border-left: var(--stripe-thick, 5px) solid var(--stripe-a);
-  border-top: var(--stripe-medium, 4px) solid var(--stripe-b);
+  border: var(--border-width) solid var(--line-thin);
+  border-left: var(--stripe-thick, 8px) solid var(--stripe-a);
+  border-top: var(--stripe-medium, 6px) solid var(--stripe-b);
   border-radius: 14px;
   padding: 12px 14px;
   display: flex;
   align-items: center;
   gap: 10px;
   margin-bottom: 8px;
+  box-shadow: var(--shadow-card);
 }
 
 .rollup b {
@@ -1173,17 +1211,19 @@ button {
   gap: 2px;
   padding: 14px 6px;
   border-radius: 12px;
-  border: 2px solid var(--line);
+  border: var(--border-width-thick) solid var(--line-thin);
   background: var(--turf-2);
   min-height: 88px;
-  transition: border-color 0.15s, transform 0.15s;
+  transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+  box-shadow: var(--shadow-card);
 }
 
 .team-card.selected {
-  border: var(--stripe-medium, 4px) solid var(--card-primary, var(--accent));
-  border-bottom: var(--stripe-thick, 5px) solid var(--card-secondary, var(--accent-alt));
+  border: var(--stripe-medium, 6px) solid var(--card-primary, var(--accent));
+  border-bottom: var(--stripe-thick, 8px) solid var(--card-secondary, var(--accent-alt));
   background: var(--surface-card);
   transform: scale(1.02);
+  box-shadow: var(--shadow-raised);
 }
 
 .team-abbr {
@@ -1230,10 +1270,11 @@ button {
   gap: 2px;
   padding: 12px;
   border-radius: 10px;
-  border: 1px solid var(--line);
+  border: var(--border-width) solid var(--line-thin);
   background: var(--turf-3);
   font-weight: 600;
   font-size: 14px;
+  box-shadow: var(--shadow-card);
 }
 
 .mode-btn small {
@@ -1245,17 +1286,18 @@ button {
 }
 
 .mode-btn.active {
-  border: var(--stripe-medium, 4px) solid var(--accent);
-  border-bottom: var(--stripe-thick, 5px) solid var(--accent-alt);
+  border: var(--stripe-medium, 6px) solid var(--accent);
+  border-bottom: var(--stripe-thick, 8px) solid var(--accent-alt);
   background: var(--accent-dim);
   color: var(--accent);
+  box-shadow: var(--shadow-raised);
 }
 
 .team-swatch {
   width: 20px;
   height: 20px;
   border-radius: 99px;
-  border: 2px solid var(--line);
+  border: var(--border-width-thick) solid var(--line-thin);
 }
 
 .team-picker-mini {
@@ -1273,8 +1315,9 @@ button {
   font-weight: 600;
   padding: 6px 10px;
   border-radius: 8px;
-  border: 1px solid var(--line);
+  border: var(--border-width) solid var(--line-thin);
   background: var(--turf-3);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset;
 }
 
 .team-pill.on {
@@ -1285,9 +1328,9 @@ button {
 @media (min-width: 768px) {
   .app-shell {
     max-width: 430px;
-    border-left: 1px solid var(--line);
-    border-right: 1px solid var(--line);
-    box-shadow: 0 0 60px rgba(0, 0, 0, 0.25);
+    border-left: var(--border-width) solid var(--line-thin);
+    border-right: var(--border-width) solid var(--line-thin);
+    box-shadow: 0 0 80px rgba(0, 0, 0, 0.35), 0 24px 64px rgba(0, 0, 0, 0.2);
   }
 
   body {
