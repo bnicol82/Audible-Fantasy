@@ -54,6 +54,15 @@ button {
   max-width: 100%;
   margin: 0 auto;
   background: var(--app-bg);
+  position: relative;
+}
+
+.app-shell::before {
+  content: "";
+  display: block;
+  height: var(--stripe-medium, 4px);
+  background: var(--stripe-bar);
+  flex-shrink: 0;
 }
 
 .app-main {
@@ -62,6 +71,7 @@ button {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  background: var(--surface);
 }
 
 .body {
@@ -93,8 +103,9 @@ button {
 .apphead .wk {
   font-family: var(--font-mono), monospace;
   font-size: 11px;
-  color: var(--flag);
+  color: var(--accent);
   letter-spacing: 0.14em;
+  font-weight: 600;
 }
 
 .hash {
@@ -110,17 +121,40 @@ button {
 
 .hash i {
   flex: 1;
-  height: 1px;
-  background: var(--line);
+  height: var(--stripe-medium, 4px);
   font-style: normal;
+  border-radius: 2px;
+}
+
+[data-mode="home"] .hash i:first-child {
+  background: var(--stripe-a);
+}
+
+[data-mode="home"] .hash i:last-child {
+  background: var(--stripe-b);
+}
+
+[data-mode="away"] .hash i:first-child {
+  background: var(--stripe-a);
+}
+
+[data-mode="away"] .hash i:last-child {
+  background: var(--stripe-b);
 }
 
 .card {
-  background: var(--turf-2);
-  border: 1px solid var(--line);
+  background: var(--surface-card);
+  border: 1px solid var(--line-thin);
   border-radius: 14px;
   padding: 14px;
   margin-bottom: 10px;
+  border-left: var(--stripe-thick, 5px) solid var(--stripe-a);
+  border-top: var(--stripe-medium, 4px) solid var(--stripe-b);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+[data-mode="away"] .card {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
 }
 
 .pill {
@@ -135,9 +169,11 @@ button {
 }
 
 .pill.gold {
-  background: var(--flag-dim);
-  border-color: rgba(255, 197, 61, 0.4);
-  color: var(--flag);
+  background: var(--accent-dim);
+  border: 2px solid var(--accent);
+  border-radius: 99px;
+  color: var(--accent);
+  font-weight: 600;
 }
 
 .pill.red {
@@ -149,16 +185,25 @@ button {
   display: flex;
   justify-content: space-around;
   align-items: center;
-  padding: 10px 8px max(16px, env(safe-area-inset-bottom));
-  border-top: 1px solid var(--line);
-  background: color-mix(in srgb, var(--turf-2) 85%, transparent);
-  backdrop-filter: blur(12px);
+  padding: 14px 8px max(16px, env(safe-area-inset-bottom));
+  background: var(--tabbar-bg, var(--surface-card));
   font-family: var(--font-mono), monospace;
   font-size: 9px;
   letter-spacing: 0.12em;
-  color: var(--chalk-35);
+  color: var(--text-subtle);
   text-transform: uppercase;
   flex-shrink: 0;
+  position: relative;
+}
+
+.tabbar::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--stripe-thick, 5px);
+  background: var(--stripe-bar);
 }
 
 .tabbar button {
@@ -177,7 +222,13 @@ button {
 }
 
 .tabbar .on {
-  color: var(--flag);
+  color: var(--accent);
+}
+
+.tabbar .on .ico {
+  border-width: 2.5px;
+  border-color: var(--accent);
+  background: var(--accent-dim);
 }
 
 .btn {
@@ -198,9 +249,10 @@ button {
 }
 
 .btn.primary {
-  background: var(--flag);
+  background: var(--accent);
   color: var(--btn-primary-text);
   border: none;
+  border-bottom: var(--stripe-medium, 4px) solid var(--accent-alt);
 }
 
 .btn .tag {
@@ -228,7 +280,7 @@ button {
 
 .logo em {
   font-style: normal;
-  color: var(--flag);
+  color: var(--accent);
 }
 
 .logosub {
@@ -317,17 +369,18 @@ button {
 }
 
 .winprob {
-  height: 4px;
+  height: var(--stripe-medium, 4px);
   border-radius: 99px;
-  background: var(--turf-3);
+  background: var(--surface-raised);
   margin-top: 12px;
   overflow: hidden;
+  border: 1px solid var(--line-thin);
 }
 
 .winprob i {
   display: block;
   height: 100%;
-  background: var(--flag);
+  background: var(--accent);
   font-style: normal;
 }
 
@@ -347,13 +400,17 @@ button {
   min-height: 0;
 }
 
+[data-mode="away"] .body {
+  background: var(--surface);
+}
+
 .slotrow {
   display: grid;
   grid-template-columns: 36px 1fr auto;
   gap: 10px;
   align-items: center;
   padding: 9px 2px;
-  border-bottom: 1px solid rgba(242, 244, 238, 0.06);
+  border-bottom: 2px solid var(--line-thin);
 }
 
 .slotrow:last-child {
@@ -604,7 +661,7 @@ button {
 }
 
 .verdictbar {
-  background: var(--flag);
+  background: var(--accent);
   color: var(--btn-primary-text);
   border-radius: 12px;
   padding: 13px 14px;
@@ -612,6 +669,7 @@ button {
   align-items: center;
   gap: 10px;
   margin-top: 2px;
+  border-left: var(--stripe-thick, 5px) solid var(--accent-alt);
 }
 
 .verdictbar b {
@@ -981,8 +1039,10 @@ button {
 }
 
 .rollup {
-  background: var(--flag-dim);
-  border: 1px solid rgba(255, 197, 61, 0.35);
+  background: var(--surface-raised);
+  border: 1px solid var(--line-thin);
+  border-left: var(--stripe-thick, 5px) solid var(--stripe-a);
+  border-top: var(--stripe-medium, 4px) solid var(--stripe-b);
   border-radius: 14px;
   padding: 12px 14px;
   display: flex;
@@ -991,18 +1051,19 @@ button {
   margin-bottom: 8px;
 }
 
+.rollup b {
+  color: var(--accent);
+}
+
 .rollup .fl {
   font-size: 18px;
+  color: var(--accent);
 }
 
 .rollup div {
   font-size: 12px;
   line-height: 1.45;
-  color: var(--chalk);
-}
-
-.rollup b {
-  color: var(--flag);
+  color: var(--text);
 }
 
 .pro-teams-scroll {
@@ -1066,8 +1127,9 @@ button {
 }
 
 .team-card.selected {
-  border-color: var(--card-primary, var(--flag));
-  background: color-mix(in srgb, var(--card-primary, var(--flag)) 12%, var(--turf-2));
+  border: var(--stripe-medium, 4px) solid var(--card-primary, var(--accent));
+  border-bottom: var(--stripe-thick, 5px) solid var(--card-secondary, var(--accent-alt));
+  background: var(--surface-card);
   transform: scale(1.02);
 }
 
@@ -1130,9 +1192,10 @@ button {
 }
 
 .mode-btn.active {
-  border-color: var(--flag);
-  background: var(--flag-dim);
-  color: var(--flag);
+  border: var(--stripe-medium, 4px) solid var(--accent);
+  border-bottom: var(--stripe-thick, 5px) solid var(--accent-alt);
+  background: var(--accent-dim);
+  color: var(--accent);
 }
 
 .team-swatch {
@@ -1177,6 +1240,6 @@ button {
   body {
     display: flex;
     justify-content: center;
-    background: color-mix(in srgb, var(--turf) 50%, #000);
+    background: color-mix(in srgb, var(--surface) 70%, #888);
   }
 }

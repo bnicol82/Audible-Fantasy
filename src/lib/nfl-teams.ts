@@ -60,47 +60,87 @@ export function applyTeamTheme(team: NflTeam, mode: ColorMode) {
   const root = document.documentElement;
   root.dataset.mode = mode;
   root.dataset.team = team.id;
-  root.style.setProperty("--team-primary", team.primary);
-  root.style.setProperty("--team-secondary", team.secondary);
+
+  const primary = team.primary;
+  const secondary = usableSecondary(team);
+  const stripe = `linear-gradient(90deg, ${primary} 0%, ${primary} 50%, ${secondary} 50%, ${secondary} 100%)`;
+
+  root.style.setProperty("--team-primary", primary);
+  root.style.setProperty("--team-secondary", secondary);
+  root.style.setProperty("--stripe-bar", stripe);
+  root.style.setProperty("--stripe-thick", "5px");
+  root.style.setProperty("--stripe-medium", "4px");
 
   if (mode === "home") {
-    root.style.setProperty("--turf", "#f2f3ee");
-    root.style.setProperty("--turf-2", "#ffffff");
-    root.style.setProperty("--turf-3", "#e6e8e1");
-    root.style.setProperty("--chalk", "#141614");
-    root.style.setProperty("--chalk-60", "rgba(20, 22, 20, 0.65)");
-    root.style.setProperty("--chalk-35", "rgba(20, 22, 20, 0.4)");
-    root.style.setProperty("--line", "rgba(0, 0, 0, 0.08)");
-    root.style.setProperty("--flag", team.primary);
-    root.style.setProperty("--flag-dim", hexAlpha(team.primary, 0.14));
-    root.style.setProperty("--app-bg", `linear-gradient(180deg, ${hexAlpha(team.primary, 0.06)} 0%, #f2f3ee 40%)`);
-    root.style.setProperty("--btn-primary-text", getContrastText(team.primary));
+    // White jersey: clean white field, bold team-color stripes & accents
+    root.style.setProperty("--surface", "#ffffff");
+    root.style.setProperty("--surface-card", "#ffffff");
+    root.style.setProperty("--surface-raised", "#f7f7f5");
+    root.style.setProperty("--text", "#121412");
+    root.style.setProperty("--text-muted", "rgba(18, 20, 18, 0.68)");
+    root.style.setProperty("--text-subtle", "rgba(18, 20, 18, 0.42)");
+    root.style.setProperty("--line-thin", "rgba(18, 20, 18, 0.08)");
+    root.style.setProperty("--stripe-a", primary);
+    root.style.setProperty("--stripe-b", secondary);
+    root.style.setProperty("--stripe-accent", secondary);
+    root.style.setProperty("--accent", primary);
+    root.style.setProperty("--accent-alt", secondary);
+    root.style.setProperty("--accent-dim", hexAlpha(primary, 0.1));
+    root.style.setProperty("--btn-primary-text", getContrastText(primary));
+    root.style.setProperty("--app-bg", "#ffffff");
+    root.style.setProperty("--tabbar-bg", "#ffffff");
   } else {
-    const darkBase = mixHex(team.secondary, "#060b08", 0.75);
-    const cardBg = mixHex(team.primary, darkBase, 0.12);
-    const raised = mixHex(team.primary, darkBase, 0.2);
-    root.style.setProperty("--turf", darkBase);
-    root.style.setProperty("--turf-2", cardBg);
-    root.style.setProperty("--turf-3", raised);
-    root.style.setProperty("--chalk", "#f2f4ee");
-    root.style.setProperty("--chalk-60", "rgba(242, 244, 238, 0.6)");
-    root.style.setProperty("--chalk-35", "rgba(242, 244, 238, 0.35)");
-    root.style.setProperty("--line", "rgba(242, 244, 238, 0.12)");
-    root.style.setProperty("--flag", team.primary);
-    root.style.setProperty("--flag-dim", hexAlpha(team.primary, 0.18));
-    root.style.setProperty(
-      "--app-bg",
-      `repeating-linear-gradient(to bottom, transparent 0 79px, rgba(242,244,238,0.028) 79px 80px), ${darkBase}`
-    );
-    root.style.setProperty("--btn-primary-text", getContrastText(team.primary));
+    // Away jersey: rich dark team base, thick white + color accents
+    const darkBase = getAwayBase(team);
+    const darkCard = lighten(darkBase, 0.08);
+    const darkRaised = lighten(darkBase, 0.14);
+
+    root.style.setProperty("--surface", darkBase);
+    root.style.setProperty("--surface-card", darkCard);
+    root.style.setProperty("--surface-raised", darkRaised);
+    root.style.setProperty("--text", "#ffffff");
+    root.style.setProperty("--text-muted", "rgba(255, 255, 255, 0.72)");
+    root.style.setProperty("--text-subtle", "rgba(255, 255, 255, 0.45)");
+    root.style.setProperty("--line-thin", "rgba(255, 255, 255, 0.14)");
+    root.style.setProperty("--stripe-a", "#ffffff");
+    root.style.setProperty("--stripe-b", secondary);
+    root.style.setProperty("--stripe-accent", primary);
+    root.style.setProperty("--accent", primary);
+    root.style.setProperty("--accent-alt", secondary);
+    root.style.setProperty("--accent-dim", hexAlpha(primary, 0.22));
+    root.style.setProperty("--btn-primary-text", getContrastText(primary));
+    root.style.setProperty("--app-bg", darkBase);
+    root.style.setProperty("--tabbar-bg", darken(darkBase, 0.15));
   }
+
+  // Legacy aliases used across components
+  root.style.setProperty("--turf", "var(--surface)");
+  root.style.setProperty("--turf-2", "var(--surface-card)");
+  root.style.setProperty("--turf-3", "var(--surface-raised)");
+  root.style.setProperty("--chalk", "var(--text)");
+  root.style.setProperty("--chalk-60", "var(--text-muted)");
+  root.style.setProperty("--chalk-35", "var(--text-subtle)");
+  root.style.setProperty("--line", "var(--line-thin)");
+  root.style.setProperty("--flag", "var(--accent)");
+  root.style.setProperty("--flag-dim", "var(--accent-dim)");
+}
+
+/** If secondary is pure black, use a lifted tone so stripes remain visible on dark away */
+function usableSecondary(team: NflTeam) {
+  if (luminance(team.secondary) < 0.08) {
+    return mixHex(team.primary, "#3a3a3a", 0.35);
+  }
+  return team.secondary;
+}
+
+function getAwayBase(team: NflTeam) {
+  const pDark = darken(team.primary, 0.35);
+  const sDark = darken(usableSecondary(team), 0.25);
+  return luminance(pDark) < luminance(sDark) ? pDark : sDark;
 }
 
 function hexAlpha(hex: string, alpha: number) {
-  const h = hex.replace("#", "");
-  const r = parseInt(h.slice(0, 2), 16);
-  const g = parseInt(h.slice(2, 4), 16);
-  const b = parseInt(h.slice(4, 6), 16);
+  const { r, g, b } = parseHex(hex);
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
@@ -113,6 +153,14 @@ function mixHex(a: string, b: string, weight: number) {
   return `#${[r, g, bl].map((v) => v.toString(16).padStart(2, "0")).join("")}`;
 }
 
+function darken(hex: string, amount: number) {
+  return mixHex(hex, "#000000", 1 - amount);
+}
+
+function lighten(hex: string, amount: number) {
+  return mixHex(hex, "#ffffff", amount);
+}
+
 function parseHex(hex: string) {
   const h = hex.replace("#", "");
   return {
@@ -122,8 +170,11 @@ function parseHex(hex: string) {
   };
 }
 
-function getContrastText(hex: string) {
+function luminance(hex: string) {
   const { r, g, b } = parseHex(hex);
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  return luminance > 0.55 ? "#141614" : "#f2f4ee";
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+}
+
+function getContrastText(hex: string) {
+  return luminance(hex) > 0.55 ? "#121412" : "#ffffff";
 }

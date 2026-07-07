@@ -17,7 +17,7 @@ export function ThemeSettings() {
           onClick={() => setColorMode("home")}
         >
           Home
-          <small>Light</small>
+          <small>White · team stripes</small>
         </button>
         <button
           type="button"
@@ -25,7 +25,7 @@ export function ThemeSettings() {
           onClick={() => setColorMode("away")}
         >
           Away
-          <small>Dark</small>
+          <small>Dark · white accents</small>
         </button>
       </div>
 
