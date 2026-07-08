@@ -14,7 +14,7 @@ type SleeperRoster = {
   owner_id: string;
   players: string[];
   starters: string[];
-  settings?: { wins?: number; losses?: number };
+  settings?: { wins?: number; losses?: number; fpts?: number };
 };
 type SleeperLeagueUser = {
   user_id: string;
@@ -137,6 +137,72 @@ export function normalizeSleeperRosters(
 
 export async function getSleeperLeague(leagueId: string) {
   return sleeperFetch<SleeperLeague>(`/league/${leagueId}`);
+}
+
+export type SleeperNflState = {
+  week: number;
+  season: string;
+  season_type: string;
+  league_season: string;
+};
+
+export async function getSleeperNflState() {
+  return sleeperFetch<SleeperNflState>("/state/nfl");
+}
+
+export function normalizeUserRosterEntries(
+  roster: SleeperRoster,
+  users: SleeperLeagueUser[],
+  players: Record<string, SleeperPlayer>,
+  rosterPositions: string[]
+) {
+  const owner = users.find((u) => u.user_id === roster.owner_id);
+  const starterSlots = rosterPositions.filter((slot) => slot !== "BN");
+  const entries: Array<{
+    playerExternalId: string;
+    playerName: string;
+    position: string;
+    nflTeam: string | null;
+    slot: string;
+    injuryStatus?: string | null;
+  }> = [];
+
+  for (const [index, playerId] of roster.starters.entries()) {
+    const player = players[playerId];
+    entries.push({
+      playerExternalId: playerId,
+      playerName: player?.full_name ?? `Player ${playerId}`,
+      position: player?.position ?? "UNK",
+      nflTeam: player?.team ?? null,
+      slot: starterSlots[index] ?? "FLEX",
+      injuryStatus: player?.injury_status ?? null,
+    });
+  }
+
+  for (const playerId of roster.players) {
+    if (roster.starters.includes(playerId)) continue;
+    const player = players[playerId];
+    entries.push({
+      playerExternalId: playerId,
+      playerName: player?.full_name ?? `Player ${playerId}`,
+      position: player?.position ?? "UNK",
+      nflTeam: player?.team ?? null,
+      slot: "BN",
+      injuryStatus: player?.injury_status ?? null,
+    });
+  }
+
+  const teamName =
+    owner?.metadata?.team_name ?? owner?.display_name ?? `Team ${roster.roster_id}`;
+
+  return {
+    externalRosterId: String(roster.roster_id),
+    teamName,
+    ownerName: owner?.display_name ?? "Unknown",
+    wins: roster.settings?.wins ?? 0,
+    losses: roster.settings?.losses ?? 0,
+    entries,
+  };
 }
 
 export async function connectSleeperLeagues(username: string, season: number) {

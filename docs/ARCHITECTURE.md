@@ -40,8 +40,8 @@ db/
 - [x] `LeagueProvider` interface + Sleeper provider
 - [x] Database schema (Neon Postgres)
 - [x] AI tool definitions + chat API skeleton
-- [ ] Neon linked on Vercel + migrations applied
-- [ ] Sleeper league sync → Postgres persistence
+- [x] Neon linked on Vercel + migrations applied
+- [x] Sleeper league sync → Postgres persistence
 - [ ] AI chat with tool execution against DB
 - [ ] Scoring computation tests
 

@@ -54,6 +54,9 @@ export const STORAGE_KEYS = {
   onboarded: "audible-onboarded",
   connected: "audible-connected",
   isPro: "audible-is-pro",
+  profileId: "audible-profile-id",
+  leagueId: "audible-league-id",
+  sleeperUsername: "audible-sleeper-username",
 } as const;
 
 export function applyTeamTheme(team: NflTeam, mode: ColorMode) {

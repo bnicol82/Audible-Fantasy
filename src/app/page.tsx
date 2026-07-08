@@ -12,18 +12,23 @@ import { StartSitScreen } from "@/components/StartSitScreen";
 import { AppShell, TabBar } from "@/components/ui";
 import { WaiversScreen } from "@/components/WaiversScreen";
 import { STORAGE_KEYS, type NflTeam } from "@/lib/nfl-teams";
+import {
+  clearStoredLeague,
+  getStoredLeagueId,
+  setStoredLeague,
+} from "@/lib/session";
 import { useTheme } from "@/lib/theme/ThemeProvider";
 
 type Tab = "team" | "ask" | "waivers" | "more";
 type View = Tab | "startsit" | "paywall" | "team-detail";
 
-/** Set to true when Sleeper/Yahoo league import is ready */
-const LEAGUE_IMPORT_ENABLED = false;
+const LEAGUE_IMPORT_ENABLED = true;
 
 export default function Home() {
   const { setTeam } = useTheme();
   const [onboarded, setOnboarded] = useState(false);
   const [connected, setConnected] = useState(false);
+  const [leagueId, setLeagueId] = useState<string | null>(null);
   const [isPro, setIsPro] = useState(false);
   const [view, setView] = useState<View>("team");
   const [hydrated, setHydrated] = useState(false);
@@ -33,13 +38,13 @@ export default function Home() {
     setOnboarded(wasOnboarded);
     setIsPro(localStorage.getItem(STORAGE_KEYS.isPro) === "true");
 
-    if (!LEAGUE_IMPORT_ENABLED) {
-      setConnected(wasOnboarded);
-      if (wasOnboarded) {
-        localStorage.setItem(STORAGE_KEYS.connected, "true");
-      }
+    if (LEAGUE_IMPORT_ENABLED) {
+      const storedLeagueId = getStoredLeagueId();
+      const isConnected = localStorage.getItem(STORAGE_KEYS.connected) === "true";
+      setLeagueId(storedLeagueId);
+      setConnected(isConnected && Boolean(storedLeagueId));
     } else {
-      setConnected(localStorage.getItem(STORAGE_KEYS.connected) === "true");
+      setConnected(wasOnboarded);
     }
 
     setHydrated(true);
@@ -50,24 +55,21 @@ export default function Home() {
     localStorage.setItem(STORAGE_KEYS.onboarded, "true");
     localStorage.setItem(STORAGE_KEYS.team, team.id);
     setOnboarded(true);
-    if (!LEAGUE_IMPORT_ENABLED) {
-      localStorage.setItem(STORAGE_KEYS.connected, "true");
-      setConnected(true);
-    }
     setView("team");
   };
 
-  const handleConnect = () => {
-    localStorage.setItem(STORAGE_KEYS.connected, "true");
+  const handleConnect = ({ leagueId: nextLeagueId, username }: { leagueId: string; username: string }) => {
+    setStoredLeague(nextLeagueId, username);
+    setLeagueId(nextLeagueId);
     setConnected(true);
     setView("team");
   };
 
   const handleDisconnect = () => {
-    if (LEAGUE_IMPORT_ENABLED) {
-      localStorage.removeItem(STORAGE_KEYS.connected);
-      setConnected(false);
-    }
+    clearStoredLeague();
+    setLeagueId(null);
+    setConnected(false);
+    setView("team");
   };
 
   const handleStartTrial = () => {
@@ -103,10 +105,12 @@ export default function Home() {
         return isPro ? (
           <ProDashboardScreen onSelectTeam={() => setView("team-detail")} />
         ) : (
-          <MyTeamScreen onStartSit={() => setView("startsit")} />
+          <MyTeamScreen leagueId={leagueId} onStartSit={() => setView("startsit")} />
         );
       case "team-detail":
-        return <MyTeamScreen onStartSit={() => setView("startsit")} />;
+        return (
+          <MyTeamScreen leagueId={leagueId} onStartSit={() => setView("startsit")} />
+        );
       case "ask":
         return <AskScreen />;
       case "waivers":
@@ -126,7 +130,7 @@ export default function Home() {
         return isPro ? (
           <ProDashboardScreen onSelectTeam={() => setView("team-detail")} />
         ) : (
-          <MyTeamScreen onStartSit={() => setView("startsit")} />
+          <MyTeamScreen leagueId={leagueId} onStartSit={() => setView("startsit")} />
         );
     }
   }

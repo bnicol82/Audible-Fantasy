@@ -2,15 +2,24 @@
 
 import { useState } from "react";
 import type { LeagueMeta } from "@/lib/providers/types";
+import { getOrCreateProfileId } from "@/lib/session";
+import { Card } from "./ui";
+
+type ConnectResult = {
+  leagueId: string;
+  username: string;
+};
 
 export function ConnectScreen({
   onConnect,
 }: {
-  onConnect: (leagues?: LeagueMeta[]) => void;
+  onConnect: (result: ConnectResult) => void;
 }) {
   const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [leagues, setLeagues] = useState<LeagueMeta[] | null>(null);
+  const [syncingId, setSyncingId] = useState<string | null>(null);
 
   async function connectSleeper() {
     if (!username.trim()) {
@@ -20,6 +29,7 @@ export function ConnectScreen({
 
     setLoading(true);
     setError(null);
+    setLeagues(null);
 
     try {
       const res = await fetch("/api/leagues/connect", {
@@ -30,22 +40,56 @@ export function ConnectScreen({
 
       const data = await res.json();
       if (!res.ok) {
-        if (res.status === 404) {
-          onConnect();
-          return;
-        }
         throw new Error(data.error ?? "Failed to connect");
       }
 
-      onConnect(data.leagues);
-    } catch (err) {
-      if (err instanceof TypeError) {
-        onConnect();
+      if (!data.leagues?.length) {
+        setError("No NFL leagues found for this username this season.");
         return;
       }
+
+      if (data.leagues.length === 1) {
+        await syncLeague(data.leagues[0].externalLeagueId);
+        return;
+      }
+
+      setLeagues(data.leagues);
+    } catch (err) {
       setError(err instanceof Error ? err.message : "Connection failed");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function syncLeague(externalLeagueId: string) {
+    setSyncingId(externalLeagueId);
+    setError(null);
+
+    try {
+      const profileId = getOrCreateProfileId();
+      const res = await fetch("/api/leagues/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          profileId,
+          username: username.trim(),
+          externalLeagueId,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error ?? "Failed to sync league");
+      }
+
+      onConnect({
+        leagueId: data.league.leagueId,
+        username: username.trim(),
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Sync failed");
+    } finally {
+      setSyncingId(null);
     }
   }
 
@@ -59,26 +103,70 @@ export function ConnectScreen({
         anything.
       </div>
 
-      <input
-        type="text"
-        className="connect-input"
-        placeholder="Sleeper username"
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
-        onKeyDown={(e) => e.key === "Enter" && connectSleeper()}
-      />
+      {!leagues ? (
+        <>
+          <input
+            type="text"
+            className="connect-input"
+            placeholder="Sleeper username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && connectSleeper()}
+            disabled={loading}
+          />
 
-      {error && <p className="connect-error">{error}</p>}
+          {error && <p className="connect-error">{error}</p>}
 
-      <button
-        type="button"
-        className="btn primary"
-        onClick={connectSleeper}
-        disabled={loading}
-      >
-        {loading ? "Connecting…" : "Connect Sleeper"}{" "}
-        <span className="tag">~10 SEC</span>
-      </button>
+          <button
+            type="button"
+            className="btn primary"
+            onClick={connectSleeper}
+            disabled={loading}
+          >
+            {loading ? "Finding leagues…" : "Connect Sleeper"}{" "}
+            <span className="tag">~10 SEC</span>
+          </button>
+        </>
+      ) : (
+        <>
+          <div className="hash" style={{ marginTop: 8 }}>
+            PICK A LEAGUE
+          </div>
+          {leagues.map((league) => (
+            <Card key={league.externalLeagueId}>
+              <button
+                type="button"
+                className="teamcard-btn"
+                onClick={() => syncLeague(league.externalLeagueId)}
+                disabled={syncingId === league.externalLeagueId}
+              >
+                <div className="lname">{league.name}</div>
+                <div className="lmeta">
+                  {league.season} · {league.totalTeams} teams ·{" "}
+                  {league.scoringSettings.format.replace("_", " ").toUpperCase()}
+                </div>
+                <div className="rec" style={{ marginTop: 8 }}>
+                  {syncingId === league.externalLeagueId
+                    ? "Syncing roster…"
+                    : "Tap to sync →"}
+                </div>
+              </button>
+            </Card>
+          ))}
+          <button
+            type="button"
+            className="btn"
+            onClick={() => {
+              setLeagues(null);
+              setError(null);
+            }}
+          >
+            Use a different username
+          </button>
+          {error && <p className="connect-error">{error}</p>}
+        </>
+      )}
+
       <button type="button" className="btn" disabled style={{ opacity: 0.45 }}>
         Connect Yahoo <span className="tag">PHASE 2</span>
       </button>
@@ -86,8 +174,6 @@ export function ConnectScreen({
         Connect ESPN <span className="tag">BETA</span>
       </button>
       <div className="connect-note">
-        No league? <u>Enter your roster manually</u>
-        <br />
         Read-only · We never change your lineup
       </div>
     </div>
