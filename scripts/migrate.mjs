@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import pg from "pg";
 
@@ -11,8 +11,10 @@ async function main() {
     process.exit(1);
   }
 
-  const migrationPath = resolve("db/migrations/001_initial_schema.sql");
-  const sql = readFileSync(migrationPath, "utf8");
+  const migrationsDir = resolve("db/migrations");
+  const files = readdirSync(migrationsDir)
+    .filter((file) => file.endsWith(".sql"))
+    .sort();
 
   const client = new Client({
     connectionString: databaseUrl,
@@ -21,8 +23,12 @@ async function main() {
 
   await client.connect();
   try {
-    await client.query(sql);
-    console.log("Migration applied:", migrationPath);
+    for (const file of files) {
+      const migrationPath = resolve(migrationsDir, file);
+      const sql = readFileSync(migrationPath, "utf8");
+      await client.query(sql);
+      console.log("Migration applied:", migrationPath);
+    }
   } finally {
     await client.end();
   }
