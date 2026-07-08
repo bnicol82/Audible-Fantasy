@@ -45,7 +45,7 @@ db/
 - [x] AI chat with tool execution against Sleeper data
 - [x] Ask Audible wired to streaming chat API with league context
 - [x] Start/Sit and Waivers screens powered by Sleeper tools (demo fallback)
-- [ ] Player cache / projections pipeline in Neon
+- [x] Player cache / projections pipeline in Neon
 - [ ] Scoring computation tests
 
 ## API routes
@@ -53,11 +53,17 @@ db/
 | Route | Purpose |
 |-------|---------|
 | `POST /api/leagues/connect` | Fetch Sleeper leagues by username |
+| `POST /api/leagues/sync` | Persist league + roster to Neon |
+| `GET /api/leagues/active` | Load synced roster + matchup + cached projections |
 | `POST /api/chat` | Streaming AI chat (requires `ANTHROPIC_API_KEY`) |
+| `GET /api/fantasy/start-sit` | Start/sit comparison with cached projections |
+| `GET /api/fantasy/waivers` | Trending waiver adds |
+| `GET /api/cache/sync` | Cache status (or sync when `CRON_SECRET` auth header present) |
+| `POST /api/cache/sync` | Sync Sleeper projections + trending players to Neon |
 
 ## Environment
 
-Copy `.env.example` → `.env.local` and fill in `DATABASE_URL` + `ANTHROPIC_API_KEY`.
+Copy `.env.example` → `.env.local` and fill in `DATABASE_URL`, `ANTHROPIC_API_KEY`, and optionally `CRON_SECRET` for scheduled cache sync.
 
 ## Deployment note
 

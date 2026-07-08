@@ -1,6 +1,10 @@
 import { startSitComparison } from "@/lib/data";
 import { getActiveLeague } from "@/lib/leagues/sync";
 import {
+  getProjectionsBySleeperIds,
+  normalizeScoringFormat,
+} from "@/lib/cache/players";
+import {
   getSleeperNflState,
   getSleeperWeeklyStats,
   initialsForName,
@@ -78,14 +82,40 @@ export async function getStartSitComparison(input: {
       // Offseason stats may be missing
     }
 
+    const scoringFormat = normalizeScoringFormat(league.scoring);
+    let projections = new Map<string, number>();
+    try {
+      const cached = await getProjectionsBySleeperIds({
+        sleeperIds: [
+          playerAEntry.playerExternalId,
+          playerBEntry.playerExternalId,
+        ],
+        season: league.season,
+        week: league.week,
+        scoringFormat,
+      });
+      projections = new Map(
+        cached.map((row) => [row.sleeperId, row.projectedPoints] as const)
+      );
+    } catch {
+      // Cache may be empty before first sync
+    }
+
     const aPoints = stats[playerAEntry.playerExternalId] ?? null;
     const bPoints = stats[playerBEntry.playerExternalId] ?? null;
+    const aProj = projections.get(playerAEntry.playerExternalId) ?? null;
+    const bProj = projections.get(playerBEntry.playerExternalId) ?? null;
+
     const winner =
-      aPoints !== null && bPoints !== null
-        ? aPoints >= bPoints
+      aProj !== null && bProj !== null
+        ? aProj >= bProj
           ? "a"
           : "b"
-        : "a";
+        : aPoints !== null && bPoints !== null
+          ? aPoints >= bPoints
+            ? "a"
+            : "b"
+          : "a";
 
     return {
       source: "live" as const,
@@ -108,12 +138,21 @@ export async function getStartSitComparison(input: {
       },
       stats: [
         {
+          label: `Projected (${league.scoring})`,
+          a: aProj !== null ? aProj.toFixed(1) : "—",
+          b: bProj !== null ? bProj.toFixed(1) : "—",
+          winner:
+            aProj !== null && bProj !== null ? (winner as "a" | "b") : null,
+        },
+        {
           label: "Last Week (Half PPR)",
           a: aPoints !== null ? aPoints.toFixed(1) : "—",
           b: bPoints !== null ? bPoints.toFixed(1) : "—",
           winner:
             aPoints !== null && bPoints !== null
-              ? (winner as "a" | "b")
+              ? aPoints >= bPoints
+                ? "a"
+                : "b"
               : null,
         },
         {
@@ -130,9 +169,13 @@ export async function getStartSitComparison(input: {
         },
       ],
       verdict:
-        winner === "a"
-          ? `${playerAEntry.playerName.split(" ").pop()} has the stronger recent profile for this slot.`
-          : `${playerBEntry.playerName.split(" ").pop()} looks like the better start this week.`,
+        aProj !== null && bProj !== null
+          ? winner === "a"
+            ? `${playerAEntry.playerName.split(" ").pop()} projects higher (${aProj.toFixed(1)} vs ${bProj.toFixed(1)}).`
+            : `${playerBEntry.playerName.split(" ").pop()} projects higher (${bProj.toFixed(1)} vs ${aProj.toFixed(1)}).`
+          : winner === "a"
+            ? `${playerAEntry.playerName.split(" ").pop()} has the stronger recent profile for this slot.`
+            : `${playerBEntry.playerName.split(" ").pop()} looks like the better start this week.`,
     };
   } catch {
     return demoPayload();

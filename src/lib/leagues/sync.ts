@@ -1,5 +1,9 @@
 import { getDb } from "@/lib/db";
 import {
+  enrichRosterWithProjections,
+  normalizeScoringFormat,
+} from "@/lib/cache/players";
+import {
   getSleeperLeague,
   getSleeperLeagueUsers,
   getSleeperMatchups,
@@ -344,7 +348,14 @@ export async function getActiveLeague(profileId: string, leagueId: string) {
     week,
     record: `${wins}–${losses}`,
     teamName: rosterRow.team_name,
-    roster: rosterRow.entries,
+    roster: await enrichRosterWithProjections({
+      roster: rosterRow.entries,
+      season: league.season,
+      week,
+      scoringFormat: normalizeScoringFormat(
+        formatScoring(league.scoring_settings?.format ?? "standard")
+      ),
+    }),
     matchup,
   } satisfies SyncedLeagueSummary;
 }

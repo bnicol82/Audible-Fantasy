@@ -34,7 +34,7 @@ function syncedRows(league: SyncedLeagueSummary): RosterRow[] {
     name: player.playerName,
     team: player.nflTeam ?? "—",
     injury: player.injuryStatus,
-    points: null,
+    points: player.projectedPoints ?? null,
   }));
 }
 
