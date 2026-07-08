@@ -6,6 +6,7 @@ type SleeperLeague = {
   name: string;
   season: string;
   total_rosters: number;
+  status?: string;
   scoring_settings: Record<string, number>;
   roster_positions: string[];
 };

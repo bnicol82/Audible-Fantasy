@@ -4,6 +4,9 @@ import { executeTool } from "@/lib/ai/execute-tools";
 import type { ToolContext } from "@/lib/ai/tool-context";
 import type { LeagueChatContext } from "@/lib/leagues/context";
 
+/** Retired 2026-06-15 — use claude-sonnet-4-6 or ANTHROPIC_MODEL env override */
+const CHAT_MODEL = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-6";
+
 type ChatMessage = {
   role: "user" | "assistant";
   content: string;
@@ -38,7 +41,7 @@ export async function runChatWithTools(input: {
 
   for (let step = 0; step < 6; step += 1) {
     const response = await client.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: CHAT_MODEL,
       max_tokens: 1024,
       system,
       tools: aiTools,

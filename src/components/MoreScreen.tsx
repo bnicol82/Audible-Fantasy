@@ -1,14 +1,15 @@
 "use client";
 
 import { AppHead, Card } from "./ui";
-import { ThemeSettings } from "./ThemeSettings";
 
 export function MoreScreen({
+  onSettings,
   onStartSit,
   onPaywall,
   isPro,
   onDisconnect,
 }: {
+  onSettings: () => void;
   onStartSit: () => void;
   onPaywall: () => void;
   isPro: boolean;
@@ -16,11 +17,12 @@ export function MoreScreen({
 }) {
   return (
     <div className="body">
-      <AppHead title="More" badge={isPro ? "PRO" : "SETTINGS"} />
+      <AppHead title="More" badge={isPro ? "PRO" : "MENU"} />
       <Card>
-        <ThemeSettings />
-      </Card>
-      <Card>
+        <button type="button" className="menu-item" onClick={onSettings}>
+          <span>Settings</span>
+          <span className="menu-arrow">→</span>
+        </button>
         {!isPro && (
           <button type="button" className="menu-item menu-item-pro" onClick={onPaywall}>
             <span>Go Pro</span>
@@ -29,14 +31,6 @@ export function MoreScreen({
         )}
         <button type="button" className="menu-item" onClick={onStartSit}>
           <span>Start / Sit Compare</span>
-          <span className="menu-arrow">→</span>
-        </button>
-        <button type="button" className="menu-item">
-          <span>League Settings</span>
-          <span className="menu-arrow">→</span>
-        </button>
-        <button type="button" className="menu-item">
-          <span>Scoring Rules</span>
           <span className="menu-arrow">→</span>
         </button>
         {onDisconnect && (

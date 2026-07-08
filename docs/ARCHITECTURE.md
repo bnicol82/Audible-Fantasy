@@ -53,6 +53,8 @@ db/
 | Route | Purpose |
 |-------|---------|
 | `POST /api/leagues/connect` | Fetch Sleeper leagues by username |
+| `GET /api/leagues/active` | Load synced roster + matchup |
+| `GET /api/leagues/settings` | League info, roster slots, scoring rules |
 | `POST /api/chat` | Streaming AI chat (requires `ANTHROPIC_API_KEY`) |
 
 ## Environment

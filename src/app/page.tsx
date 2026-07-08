@@ -8,6 +8,7 @@ import { MyTeamScreen } from "@/components/MyTeamScreen";
 import { OnboardingScreen } from "@/components/OnboardingScreen";
 import { PaywallScreen } from "@/components/PaywallScreen";
 import { ProDashboardScreen } from "@/components/ProDashboardScreen";
+import { SettingsScreen } from "@/components/SettingsScreen";
 import { StartSitScreen } from "@/components/StartSitScreen";
 import { AppShell, TabBar } from "@/components/ui";
 import { WaiversScreen } from "@/components/WaiversScreen";
@@ -22,7 +23,7 @@ import {
 import { useTheme } from "@/lib/theme/ThemeProvider";
 
 type Tab = "team" | "ask" | "waivers" | "more";
-type View = Tab | "startsit" | "paywall" | "team-detail";
+type View = Tab | "startsit" | "paywall" | "team-detail" | "settings";
 
 const LEAGUE_IMPORT_ENABLED = true;
 
@@ -102,9 +103,11 @@ export default function Home() {
   const activeTab: Tab =
     view === "startsit" || view === "paywall" || view === "team-detail"
       ? "team"
-      : view;
+      : view === "settings"
+        ? "more"
+        : view;
 
-  const showTabBar = onboarded && connected && view !== "paywall";
+  const showTabBar = onboarded && connected && view !== "paywall" && view !== "settings";
 
   function renderScreen() {
     if (!onboarded) {
@@ -144,10 +147,26 @@ export default function Home() {
       case "more":
         return (
           <MoreScreen
+            onSettings={() => setView("settings")}
             onStartSit={() => setView("startsit")}
             onPaywall={() => setView("paywall")}
             isPro={isPro}
             onDisconnect={LEAGUE_IMPORT_ENABLED ? handleDisconnect : undefined}
+          />
+        );
+      case "settings":
+        return (
+          <SettingsScreen
+            leagueId={leagueId}
+            onBack={() => setView("more")}
+            onDisconnect={
+              LEAGUE_IMPORT_ENABLED
+                ? () => {
+                    handleDisconnect();
+                    setView("more");
+                  }
+                : undefined
+            }
           />
         );
       default:
