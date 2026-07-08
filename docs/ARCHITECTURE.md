@@ -45,6 +45,7 @@ db/
 - [x] AI chat with tool execution against Sleeper data
 - [x] Ask Audible wired to streaming chat API with league context
 - [x] Start/Sit and Waivers screens powered by Sleeper tools (demo fallback)
+- [x] Settings page (league, roster slots, scoring rules, appearance)
 - [ ] Player cache / projections pipeline in Neon
 - [ ] Scoring computation tests
 
