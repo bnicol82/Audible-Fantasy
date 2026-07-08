@@ -949,6 +949,55 @@ button {
   margin-top: 8px;
 }
 
+.settings-head {
+  position: relative;
+}
+
+.settings-back {
+  position: absolute;
+  left: 0;
+  top: 2px;
+  z-index: 1;
+  font-family: var(--font-mono), monospace;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--chalk-60);
+  padding: 4px 0;
+}
+
+.settings-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: var(--border-width) solid var(--line-thin);
+  font-size: 14px;
+}
+
+.settings-row:last-child {
+  border-bottom: none;
+}
+
+.settings-label {
+  color: var(--chalk-60);
+  font-weight: 500;
+}
+
+.settings-value {
+  text-align: right;
+  font-family: var(--font-mono), monospace;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
+[data-mode="away"] .settings-label {
+  color: var(--text-on-card-muted, var(--chalk-60));
+}
+
+[data-mode="away"] .settings-value {
+  color: var(--text-on-card, var(--chalk));
+}
+
 .menu-item-pro {
   color: var(--flag);
 }

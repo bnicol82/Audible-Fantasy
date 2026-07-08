@@ -45,6 +45,7 @@ db/
 - [x] AI chat with tool execution against Sleeper data
 - [x] Ask Audible wired to streaming chat API with league context
 - [x] Start/Sit and Waivers screens powered by Sleeper tools (demo fallback)
+- [x] Settings page (league, roster slots, scoring rules, appearance)
 - [ ] Player cache / projections pipeline in Neon
 - [ ] Scoring computation tests
 
@@ -53,6 +54,8 @@ db/
 | Route | Purpose |
 |-------|---------|
 | `POST /api/leagues/connect` | Fetch Sleeper leagues by username |
+| `GET /api/leagues/active` | Load synced roster + matchup |
+| `GET /api/leagues/settings` | League info, roster slots, scoring rules |
 | `POST /api/chat` | Streaming AI chat (requires `ANTHROPIC_API_KEY`) |
 
 ## Environment
