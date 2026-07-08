@@ -28,27 +28,31 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full product & technica
 
 ```bash
 cp .env.example .env.local
-# Add NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, ANTHROPIC_API_KEY
+# Add DATABASE_URL (Neon) and ANTHROPIC_API_KEY
 
 npm install
+npm run db:migrate
 npm run dev
 ```
 
 ## Database
 
+Neon Postgres — see [db/README.md](db/README.md).
+
 ```bash
-# Apply migrations to your Supabase project
-supabase db push
+npm run db:migrate
 ```
 
-Schema: `supabase/migrations/20260707000000_initial_schema.sql`
+Schema: `db/migrations/001_initial_schema.sql`
+
+Health check (after deploy): `GET /api/health/db`
 
 ## Deployment
 
 | Target | Use case |
 |--------|----------|
 | **GitHub Pages** | Static UI mockups (auto-deploy on push to `main`) |
-| **Vercel** | Full app with API routes, Supabase, AI chat |
+| **Vercel** | Full app with API routes, Neon Postgres, AI chat |
 
 ### Vercel setup
 
@@ -59,6 +63,6 @@ Schema: `supabase/migrations/20260707000000_initial_schema.sql`
 ## Tech Stack
 
 - Next.js 15 · React 19 · TypeScript
-- Supabase (Postgres, Auth, RLS)
+- Neon Postgres (via Vercel Marketplace)
 - Anthropic API (Claude with tool use)
 - Sleeper API (league sync)

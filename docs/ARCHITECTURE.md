@@ -13,9 +13,10 @@ Fantasy football AI assistant. Mobile-first PWA. Multi-sport by design, football
 | Layer | Choice |
 |-------|--------|
 | Frontend | Next.js 15 (App Router), PWA |
-| Backend | Supabase (Postgres, Auth, RLS, Edge Functions) |
+| Backend | Neon Postgres (via Vercel) + API routes |
 | AI | Anthropic API (tool use + streaming) |
 | Data | Sleeper API + nflverse (Phase 1) |
+| Auth | Clerk (Phase 1B — replaces Supabase Auth) |
 | Payments | Stripe (Phase 2) |
 | Deploy | Vercel (API routes) + GitHub Pages (UI mockups) |
 
@@ -27,19 +28,19 @@ src/
   components/       # UI screens (mockups → production)
   lib/
     providers/      # LeagueProvider (Sleeper, Manual, Yahoo, ESPN)
-    supabase/       # Auth + DB clients
+    db.ts           # Neon Postgres client
     ai/             # Tool definitions + system prompt
-supabase/
-  migrations/     # Postgres schema + RLS
+db/
+  migrations/       # Postgres schema (Neon)
 ```
 
 ## Phase 1 (MVP — before Week 1 2026)
 
 - [x] UI mockups (connect, roster, chat, start/sit, waivers, paywall, pro dashboard)
 - [x] `LeagueProvider` interface + Sleeper provider
-- [x] Database schema + RLS policies
+- [x] Database schema (Neon Postgres)
 - [x] AI tool definitions + chat API skeleton
-- [ ] Supabase project linked + migrations applied
+- [ ] Neon linked on Vercel + migrations applied
 - [ ] Sleeper league sync → Postgres persistence
 - [ ] AI chat with tool execution against DB
 - [ ] Scoring computation tests
@@ -53,9 +54,9 @@ supabase/
 
 ## Environment
 
-Copy `.env.example` → `.env.local` and fill in Supabase + Anthropic keys.
+Copy `.env.example` → `.env.local` and fill in `DATABASE_URL` + `ANTHROPIC_API_KEY`.
 
 ## Deployment note
 
 GitHub Pages serves static UI only (no API routes). For full backend:
-deploy to **Vercel** with environment variables configured.
+deploy to **Vercel** with `DATABASE_URL` and `ANTHROPIC_API_KEY` configured.
