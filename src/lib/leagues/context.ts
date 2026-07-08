@@ -1,3 +1,4 @@
+import type { AppPhase } from "@/lib/app-phase";
 import type { SyncedLeagueSummary } from "@/lib/leagues/sync";
 
 export type LeagueChatContext = {
@@ -9,6 +10,9 @@ export type LeagueChatContext = {
   teamName?: string;
   externalLeagueId?: string;
   season?: number;
+  phase?: AppPhase;
+  leagueStatus?: string;
+  draftSummary?: string;
 };
 
 export function buildLeagueChatContext(
@@ -22,6 +26,11 @@ export function buildLeagueChatContext(
     })
     .join(", ");
 
+  const draftSummary =
+    league.phase === "draft"
+      ? `League status: ${league.leagueStatus}. Carryover roster until draft day — plan picks around existing keepers.`
+      : undefined;
+
   return {
     leagueName: league.name,
     scoringFormat: league.scoring,
@@ -31,10 +40,30 @@ export function buildLeagueChatContext(
     teamName: league.teamName,
     externalLeagueId: league.externalLeagueId,
     season: league.season,
+    phase: league.phase,
+    leagueStatus: league.leagueStatus,
+    draftSummary,
   };
 }
 
-export function demoLeagueChatContext(): LeagueChatContext {
+export function demoLeagueChatContext(phase: AppPhase = "in_season"): LeagueChatContext {
+  if (phase === "draft") {
+    return {
+      leagueName: "The Gauntlet League",
+      scoringFormat: "Half PPR",
+      rosterSummary:
+        "Josh Allen (carryover), Ja'Marr Chase (carryover) — drafting RB/WR depth next",
+      week: 0,
+      record: "0-0",
+      teamName: "Billy's Bandits",
+      season: new Date().getFullYear(),
+      phase: "draft",
+      leagueStatus: "pre_draft",
+      draftSummary:
+        "Snake draft, pick 4. Biggest needs: RB, WR, TE. Use ADP and roster construction, not vibes.",
+    };
+  }
+
   return {
     leagueName: "The Gauntlet League",
     scoringFormat: "Half PPR",
@@ -44,5 +73,6 @@ export function demoLeagueChatContext(): LeagueChatContext {
     record: "3-1",
     teamName: "Billy's Bandits",
     season: new Date().getFullYear(),
+    phase: "in_season",
   };
 }

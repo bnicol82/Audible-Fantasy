@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { AppPhase } from "@/lib/app-phase";
 import {
   buildLeagueChatContext,
   demoLeagueChatContext,
@@ -10,24 +11,44 @@ import { streamChatResponse, type ChatMessage } from "@/lib/chat/stream";
 import { getOrCreateProfileId } from "@/lib/session";
 import { AppHead, Hash } from "./ui";
 
-const SUGGESTIONS = [
+const IN_SEASON_SUGGESTIONS = [
   "Who should I start at flex?",
   "Is my RB1 playing this week?",
   "Rank my starters",
   "Who should I drop?",
 ];
 
-export function AskScreen({ leagueId }: { leagueId: string | null }) {
-  const [context, setContext] = useState<LeagueChatContext>(demoLeagueChatContext());
+const DRAFT_SUGGESTIONS = [
+  "Who should I pick at 1.04?",
+  "RB or WR in round 2?",
+  "Compare Bijan vs Gibbs for me",
+  "What positions should I target next?",
+];
+
+export function AskScreen({
+  leagueId,
+  appPhase = "in_season",
+}: {
+  leagueId: string | null;
+  appPhase?: AppPhase;
+}) {
+  const isDraftMode = appPhase === "draft";
+  const [context, setContext] = useState<LeagueChatContext>(
+    demoLeagueChatContext(appPhase)
+  );
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [streaming, setStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const chatRef = useRef<HTMLDivElement>(null);
+  const suggestions = isDraftMode ? DRAFT_SUGGESTIONS : IN_SEASON_SUGGESTIONS;
 
   useEffect(() => {
-    if (!leagueId) return;
+    if (!leagueId) {
+      setContext(demoLeagueChatContext(appPhase));
+      return;
+    }
 
     const activeLeagueId = leagueId;
     let cancelled = false;
@@ -40,7 +61,10 @@ export function AskScreen({ leagueId }: { leagueId: string | null }) {
         );
         const json = await res.json();
         if (!cancelled && res.ok && json.league) {
-          setContext(buildLeagueChatContext(json.league));
+          const nextContext = buildLeagueChatContext(json.league);
+          setContext(
+            appPhase === "draft" ? { ...nextContext, phase: "draft" } : nextContext
+          );
         }
       } catch {
         // Keep demo context
@@ -51,7 +75,7 @@ export function AskScreen({ leagueId }: { leagueId: string | null }) {
     return () => {
       cancelled = true;
     };
-  }, [leagueId]);
+  }, [leagueId, appPhase]);
 
   useEffect(() => {
     chatRef.current?.scrollTo({
@@ -81,7 +105,7 @@ export function AskScreen({ leagueId }: { leagueId: string | null }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: nextMessages,
-          leagueContext: context,
+          leagueContext: { ...context, phase: appPhase },
           profileId,
           leagueId,
         }),
@@ -120,16 +144,21 @@ export function AskScreen({ leagueId }: { leagueId: string | null }) {
 
   return (
     <div className="body">
-      <AppHead title="Ask Audible" badge={`WK ${context.week}`} />
+      <AppHead
+        title="Ask Audible"
+        badge={isDraftMode ? "DRAFT MODE" : `WK ${context.week}`}
+      />
       <Hash>
         {context.leagueName} · {context.scoringFormat}
+        {isDraftMode ? " · DRAFT" : ""}
       </Hash>
 
       <div className="chat-area" ref={chatRef}>
         {messages.length === 0 && (
           <div className="bubble ai">
-            Ask about your lineup, waivers, or matchups. I know your roster and
-            scoring settings.
+            {isDraftMode
+              ? "Ask about draft strategy, pick order, tiers, and roster construction. I know your carryover roster and league settings."
+              : "Ask about your lineup, waivers, or matchups. I know your roster and scoring settings."}
             <div className="sources">
               <i />
               ROSTER: {context.rosterSummary}
@@ -152,7 +181,7 @@ export function AskScreen({ leagueId }: { leagueId: string | null }) {
       </div>
 
       <div className="suggest">
-        {SUGGESTIONS.map((suggestion) => (
+        {suggestions.map((suggestion) => (
           <button
             key={suggestion}
             type="button"
@@ -176,7 +205,9 @@ export function AskScreen({ leagueId }: { leagueId: string | null }) {
           type="text"
           value={input}
           onChange={(event) => setInput(event.target.value)}
-          placeholder="Ask about your team…"
+          placeholder={
+            isDraftMode ? "Ask about your draft…" : "Ask about your team…"
+          }
           disabled={loading || streaming}
         />
         <button

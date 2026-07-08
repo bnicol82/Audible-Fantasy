@@ -1,4 +1,5 @@
 import { getDb } from "@/lib/db";
+import { phaseFromLeagueStatus, type AppPhase } from "@/lib/app-phase";
 import {
   getSleeperLeague,
   getSleeperLeagueUsers,
@@ -20,6 +21,11 @@ export type SyncedLeagueSummary = {
   week: number;
   record: string;
   teamName: string;
+  leagueStatus: string;
+  phase: AppPhase;
+  draftId?: string;
+  sleeperUserId?: string;
+  externalRosterId?: string;
   roster: NormalizedRosterEntry[];
   matchup: {
     yourTeam: string;
@@ -227,6 +233,11 @@ export async function syncSleeperLeague(input: {
     week,
     record: `${userNormalized.wins}–${userNormalized.losses}`,
     teamName: userNormalized.teamName,
+    leagueStatus: league.status ?? "pre_draft",
+    phase: phaseFromLeagueStatus(league.status),
+    draftId: league.draft_id,
+    sleeperUserId: sleeperUser.user_id,
+    externalRosterId: userNormalized.externalRosterId,
     roster: userNormalized.entries,
     matchup,
   } satisfies SyncedLeagueSummary;
@@ -276,10 +287,11 @@ export async function getActiveLeague(profileId: string, leagueId: string) {
     entries: NormalizedRosterEntry[];
   }>;
 
-  const [nflState, sleeperRosters, users] = await Promise.all([
+  const [nflState, sleeperRosters, users, liveLeague] = await Promise.all([
     getSleeperNflState(),
     getSleeperRosters(league.external_league_id),
     getSleeperLeagueUsers(league.external_league_id),
+    getSleeperLeague(league.external_league_id),
   ]);
 
   const week = nflState.week;
@@ -344,6 +356,11 @@ export async function getActiveLeague(profileId: string, leagueId: string) {
     week,
     record: `${wins}–${losses}`,
     teamName: rosterRow.team_name,
+    leagueStatus: liveLeague.status ?? "pre_draft",
+    phase: phaseFromLeagueStatus(liveLeague.status),
+    draftId: liveLeague.draft_id,
+    sleeperUserId: league.sleeper_user_id,
+    externalRosterId: rosterRow.external_roster_id,
     roster: rosterRow.entries,
     matchup,
   } satisfies SyncedLeagueSummary;

@@ -1,4 +1,5 @@
 import type { ReactNode, SVGProps } from "react";
+import type { AppPhase } from "@/lib/app-phase";
 
 function TabIcon({
   id,
@@ -44,6 +45,18 @@ function TabIcon({
           <path d="M5 17.5v-1a4.5 4.5 0 0 1 9 0v1" />
           <path d="M17.5 8.5v6" />
           <path d="M14.5 11.5h6" />
+        </svg>
+      );
+    case "draft":
+      return (
+        <svg {...shared}>
+          <path d="M4 6.5h16" />
+          <path d="M6 6.5V18" />
+          <path d="M10 6.5V18" />
+          <path d="M14 6.5V18" />
+          <path d="M18 6.5V18" />
+          <path d="M5 18h14" />
+          <path d="M8 4.5h8" />
         </svg>
       );
     case "more":
@@ -131,20 +144,25 @@ export function TabBar({
   onChange,
   dimmed = false,
   isPro = false,
+  appPhase = "in_season",
 }: {
   active: string;
   onChange: (tab: string) => void;
   dimmed?: boolean;
   isPro?: boolean;
+  appPhase?: AppPhase;
 }) {
+  const isDraftMode = appPhase === "draft";
   const tabs = [
     {
       id: "team",
       label: isPro ? "Teams" : "My Team",
-      hint: isPro ? "All leagues" : "Roster",
+      hint: isDraftMode ? "Carryover roster" : isPro ? "All leagues" : "Roster",
     },
-    { id: "ask", label: "Ask AI", hint: "Coach chat" },
-    { id: "waivers", label: "Waivers", hint: "Add players" },
+    { id: "ask", label: "Ask AI", hint: isDraftMode ? "Draft coach" : "Coach chat" },
+    isDraftMode
+      ? { id: "draft", label: "Draft", hint: "Board + targets" }
+      : { id: "waivers", label: "Waivers", hint: "Add players" },
     { id: "more", label: "More", hint: "Menu" },
   ];
 

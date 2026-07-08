@@ -178,6 +178,105 @@ export const proTeams: ProTeam[] = [
   },
 ];
 
+export type DraftPickSummary = {
+  pickNo: number;
+  round: number;
+  playerName: string;
+  position: string;
+  team: string | null;
+  isYours: boolean;
+  isKeeper?: boolean;
+};
+
+export type DraftTarget = {
+  playerExternalId: string;
+  name: string;
+  position: string;
+  team: string | null;
+  adp: number;
+  tier: string;
+  note: string;
+};
+
+export const draftBoard = {
+  leagueName: "The Gauntlet League",
+  teamName: "Billy's Bandits",
+  scoring: "Half PPR",
+  draftType: "Snake",
+  status: "pre_draft" as const,
+  teams: 12,
+  rounds: 15,
+  draftSlot: 4,
+  nextPick: 4,
+  picksUntilYou: 3,
+  carryoverNote:
+    "Your imported roster carries over until the draft. Use it to plan positional needs.",
+  rosterNeeds: [
+    { slot: "RB", needed: 2, label: "Need 2 RB" },
+    { slot: "WR", needed: 1, label: "Need 1 WR" },
+    { slot: "TE", needed: 1, label: "Need 1 TE" },
+  ],
+  yourPicks: [
+    {
+      pickNo: 0,
+      round: 0,
+      playerName: "Josh Allen",
+      position: "QB",
+      team: "BUF",
+      isYours: true,
+      isKeeper: true,
+    },
+    {
+      pickNo: 0,
+      round: 0,
+      playerName: "Ja'Marr Chase",
+      position: "WR",
+      team: "CIN",
+      isYours: true,
+      isKeeper: true,
+    },
+  ] satisfies DraftPickSummary[],
+  recentPicks: [] as DraftPickSummary[],
+  targets: [
+    {
+      playerExternalId: "9226",
+      name: "Bijan Robinson",
+      position: "RB",
+      team: "ATL",
+      adp: 5,
+      tier: "Elite RB1",
+      note: "Anchor RB if he falls — fills your biggest need.",
+    },
+    {
+      playerExternalId: "8150",
+      name: "Jahmyr Gibbs",
+      position: "RB",
+      team: "DET",
+      adp: 8,
+      tier: "RB1",
+      note: "Explosive ceiling in a high-scoring offense.",
+    },
+    {
+      playerExternalId: "8136",
+      name: "Puka Nacua",
+      position: "WR",
+      team: "LAR",
+      adp: 12,
+      tier: "WR1",
+      note: "Volume WR with a soft target share profile.",
+    },
+    {
+      playerExternalId: "8134",
+      name: "Trey McBride",
+      position: "TE",
+      team: "ARI",
+      adp: 28,
+      tier: "TE1",
+      note: "Clear TE1 tier break if you want to lock the position early.",
+    },
+  ] satisfies DraftTarget[],
+};
+
 export const paywallFeatures = [
   { feature: "Leagues synced", free: "1", pro: "∞" },
   { feature: "AI messages", free: "10/WK", pro: "∞" },

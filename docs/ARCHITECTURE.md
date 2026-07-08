@@ -45,6 +45,7 @@ db/
 - [x] AI chat with tool execution against Sleeper data
 - [x] Ask Audible wired to streaming chat API with league context
 - [x] Start/Sit and Waivers screens powered by Sleeper tools (demo fallback)
+- [x] Draft Mode — pre-draft UI, draft board, and AI draft tools
 - [ ] Player cache / projections pipeline in Neon
 - [ ] Scoring computation tests
 
@@ -53,6 +54,9 @@ db/
 | Route | Purpose |
 |-------|---------|
 | `POST /api/leagues/connect` | Fetch Sleeper leagues by username |
+| `POST /api/leagues/sync` | Persist league + roster to Neon |
+| `GET /api/leagues/active` | Load synced roster + league phase |
+| `GET /api/fantasy/draft` | Draft board, roster needs, and targets |
 | `POST /api/chat` | Streaming AI chat (requires `ANTHROPIC_API_KEY`) |
 
 ## Environment

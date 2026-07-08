@@ -7,6 +7,8 @@ import {
   getSleeperWeeklyStats,
   resolvePlayers,
 } from "@/lib/providers/sleeper";
+import type { AppPhase } from "@/lib/app-phase";
+import { getDraftBoard } from "@/lib/fantasy/draft";
 import type { ToolContext } from "./tool-context";
 import { demoToolContext } from "./tool-context";
 
@@ -54,6 +56,12 @@ export async function executeTool(
       return getPlayerStats(input, context);
     case "get_projections":
       return getProjections(input, context);
+    case "get_draft_board":
+      return getDraftBoardTool(context);
+    case "get_available_players":
+      return getAvailablePlayers(input, context);
+    case "compare_draft_targets":
+      return compareDraftTargets(input, context);
     default:
       return { error: `Unknown tool: ${name}` };
   }
@@ -182,6 +190,86 @@ async function getProjections(input: ToolInput, context: ToolContext) {
   };
 }
 
+async function getDraftBoardTool(context: ToolContext) {
+  const board = await getDraftBoard({
+    profileId: context.profileId,
+    leagueId: context.leagueId,
+  });
+
+  return {
+    status: board.status,
+    draftType: board.draftType,
+    draftSlot: board.draftSlot,
+    nextPick: board.nextPick,
+    picksUntilYou: board.picksUntilYou,
+    rosterNeeds: board.rosterNeeds,
+    yourPicks: board.yourPicks,
+    recentPicks: board.recentPicks.slice(0, 6),
+    targets: board.targets,
+    carryoverNote: board.carryoverNote,
+  };
+}
+
+async function getAvailablePlayers(input: ToolInput, context: ToolContext) {
+  const position =
+    typeof input.position === "string" && input.position !== "ALL"
+      ? input.position
+      : undefined;
+  const limit = asNumber(input.limit, 10);
+  const board = await getDraftBoard({
+    profileId: context.profileId,
+    leagueId: context.leagueId,
+  });
+  const drafted = new Set(context.draftedPlayerIds ?? board.draftedPlayerIds);
+  const players = await getSleeperPlayers();
+
+  const available = Object.entries(players)
+    .map(([id, player]) => ({ id, ...player }))
+    .filter(
+      (player) =>
+        player.full_name &&
+        player.search_rank &&
+        player.search_rank > 0 &&
+        !drafted.has(player.id) &&
+        ["QB", "RB", "WR", "TE", "K", "DEF"].includes(player.position ?? "") &&
+        (!position || player.position === position)
+    )
+    .sort((a, b) => (a.search_rank ?? 9999) - (b.search_rank ?? 9999))
+    .slice(0, limit)
+    .map((player) => ({
+      ...formatPlayer({ ...player, player_id: player.id }),
+      adp: player.search_rank,
+    }));
+
+  return {
+    position: position ?? "ALL",
+    available,
+    note: "ADP uses Sleeper search_rank (lower = earlier).",
+  };
+}
+
+async function compareDraftTargets(input: ToolInput, context: ToolContext) {
+  const ids = asStringArray(input.player_ids);
+  const players = await getSleeperPlayers();
+  const resolved = resolvePlayers(players, ids);
+  const board = await getDraftBoard({
+    profileId: context.profileId,
+    leagueId: context.leagueId,
+  });
+
+  return {
+    scoringFormat: context.scoringFormat,
+    rosterNeeds: board.rosterNeeds,
+    players: resolved.map((player) => ({
+      ...formatPlayer(player),
+      adp: players[player.player_id ?? ""]?.search_rank ?? null,
+      alreadyOwned:
+        context.rosterPlayerIds.includes(player.player_id ?? "") ||
+        board.yourPicks.some((pick) => pick.playerName === player.full_name),
+    })),
+  };
+}
+
 export async function buildToolContextFromLeague(
   profileId: string,
   leagueId: string
@@ -190,12 +278,21 @@ export async function buildToolContextFromLeague(
   const league = await getActiveLeague(profileId, leagueId);
   if (!league) return null;
 
+  const board =
+    league.phase === "draft"
+      ? await getDraftBoard({ profileId, leagueId }).catch(() => null)
+      : null;
+
   return {
     externalLeagueId: league.externalLeagueId,
     season: league.season,
     week: league.week,
     scoringFormat: league.scoring.toLowerCase().replace(" ", "_"),
     rosterPlayerIds: league.roster.map((player) => player.playerExternalId),
+    phase: league.phase,
+    profileId,
+    leagueId,
+    draftedPlayerIds: board?.draftedPlayerIds,
   };
 }
 
@@ -207,6 +304,7 @@ export async function buildToolContextFromRequest(input: {
     scoringFormat?: string;
     externalLeagueId?: string;
     season?: number;
+    phase?: AppPhase;
   };
 }) {
   if (input.profileId && input.leagueId && process.env.DATABASE_URL) {
@@ -215,6 +313,7 @@ export async function buildToolContextFromRequest(input: {
   }
 
   const nflState = await getSleeperNflState().catch(() => null);
+  const phase = input.leagueContext?.phase;
 
   const scoring = input.leagueContext?.scoringFormat?.toLowerCase() ?? "";
   const scoringFormat = scoring.includes("half")
@@ -231,5 +330,8 @@ export async function buildToolContextFromRequest(input: {
     week: input.leagueContext?.week ?? nflState?.week ?? demoToolContext().week,
     scoringFormat,
     rosterPlayerIds: [],
+    phase,
+    profileId: input.profileId,
+    leagueId: input.leagueId,
   };
 }

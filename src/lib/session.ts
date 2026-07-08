@@ -1,4 +1,5 @@
 import { STORAGE_KEYS } from "@/lib/nfl-teams";
+import type { AppPhase } from "@/lib/app-phase";
 
 export function getOrCreateProfileId(): string {
   if (typeof window === "undefined") {
@@ -30,6 +31,7 @@ export function clearStoredLeague() {
   localStorage.removeItem(STORAGE_KEYS.sleeperUsername);
   localStorage.removeItem(STORAGE_KEYS.connected);
   localStorage.removeItem(STORAGE_KEYS.demoMode);
+  localStorage.removeItem(STORAGE_KEYS.appPhase);
 }
 
 export function setDemoMode() {
@@ -37,6 +39,24 @@ export function setDemoMode() {
   localStorage.setItem(STORAGE_KEYS.connected, "true");
   localStorage.removeItem(STORAGE_KEYS.leagueId);
   localStorage.removeItem(STORAGE_KEYS.sleeperUsername);
+}
+
+export function setDraftDemoMode() {
+  setDemoMode();
+  setStoredAppPhase("draft");
+}
+
+export function getStoredAppPhase(): AppPhase | null {
+  if (typeof window === "undefined") return null;
+  const value = localStorage.getItem(STORAGE_KEYS.appPhase);
+  if (value === "draft" || value === "in_season" || value === "offseason") {
+    return value;
+  }
+  return null;
+}
+
+export function setStoredAppPhase(phase: AppPhase) {
+  localStorage.setItem(STORAGE_KEYS.appPhase, phase);
 }
 
 export function isDemoMode() {

@@ -58,6 +58,7 @@ export const STORAGE_KEYS = {
   leagueId: "audible-league-id",
   sleeperUsername: "audible-sleeper-username",
   demoMode: "audible-demo-mode",
+  appPhase: "audible-app-phase",
 } as const;
 
 export function applyTeamTheme(team: NflTeam, mode: ColorMode) {

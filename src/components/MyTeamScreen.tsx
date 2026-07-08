@@ -40,10 +40,14 @@ function syncedRows(league: SyncedLeagueSummary): RosterRow[] {
 
 export function MyTeamScreen({
   leagueId,
+  isDraftMode = false,
   onStartSit,
+  onOpenDraft,
 }: {
   leagueId: string | null;
+  isDraftMode?: boolean;
   onStartSit: () => void;
+  onOpenDraft?: () => void;
 }) {
   const [data, setData] = useState<SyncedLeagueSummary | null>(null);
   const [loading, setLoading] = useState(Boolean(leagueId));
@@ -120,12 +124,36 @@ export function MyTeamScreen({
     <div className="body">
       <AppHead
         title="My Team"
-        badge={`WK ${league.week ?? demoLeague.week} · ${league.record ?? demoLeague.record}`}
+        badge={
+          isDraftMode
+            ? "PRE-DRAFT · CARRYOVER ROSTER"
+            : `WK ${league.week ?? demoLeague.week} · ${league.record ?? demoLeague.record}`
+        }
       />
       <Hash>
         {league.name} · {league.scoring ?? demoLeague.scoring}
         {usingDemo && !leagueId ? " · DEMO" : ""}
+        {isDraftMode ? " · DRAFT PREP" : ""}
       </Hash>
+
+      {isDraftMode && (
+        <Card>
+          <p className="rec" style={{ margin: 0 }}>
+            This is your carryover roster until your league drafts. Use the Draft tab
+            and Ask AI to plan your picks around these keepers.
+          </p>
+          {onOpenDraft && (
+            <button
+              type="button"
+              className="btn primary"
+              style={{ marginTop: 12 }}
+              onClick={onOpenDraft}
+            >
+              Open Draft Board
+            </button>
+          )}
+        </Card>
+      )}
 
       {loading && <p className="connect-error">Loading your roster…</p>}
       {error && <p className="connect-error">{error}</p>}
@@ -178,9 +206,11 @@ export function MyTeamScreen({
         ))}
       </Card>
 
-      <button type="button" className="lineup-cta" onClick={onStartSit}>
-        <Pill variant="gold">⚑ 1 LINEUP QUESTION — ASK AUDIBLE</Pill>
-      </button>
+      {!isDraftMode && (
+        <button type="button" className="lineup-cta" onClick={onStartSit}>
+          <Pill variant="gold">⚑ 1 LINEUP QUESTION — ASK AUDIBLE</Pill>
+        </button>
+      )}
     </div>
   );
 }
