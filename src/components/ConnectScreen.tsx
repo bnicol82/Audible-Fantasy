@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { AppPhase } from "@/lib/app-phase";
 import type { LeagueMeta } from "@/lib/providers/types";
 import { getOrCreateProfileId } from "@/lib/session";
 import { Card } from "./ui";
@@ -8,14 +9,17 @@ import { Card } from "./ui";
 type ConnectResult = {
   leagueId: string;
   username: string;
+  phase?: AppPhase;
 };
 
 export function ConnectScreen({
   onConnect,
   onSkipDemo,
+  onDraftDemo,
 }: {
   onConnect: (result: ConnectResult) => void;
   onSkipDemo: () => void;
+  onDraftDemo: () => void;
 }) {
   const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(false);
@@ -89,6 +93,7 @@ export function ConnectScreen({
       onConnect({
         leagueId: data.league.leagueId,
         username: username.trim(),
+        phase: data.league.phase,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sync failed");
@@ -133,6 +138,10 @@ export function ConnectScreen({
           <button type="button" className="btn" onClick={onSkipDemo}>
             Explore with demo data
             <span className="tag">NO LEAGUE NEEDED</span>
+          </button>
+          <button type="button" className="btn" onClick={onDraftDemo}>
+            Try draft mode demo
+            <span className="tag">PRE-DRAFT</span>
           </button>
         </>
       ) : (

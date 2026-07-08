@@ -18,6 +18,8 @@ export type LeagueMeta = {
   sport: string;
   season: number;
   totalTeams: number;
+  status?: string;
+  draftId?: string;
   scoringSettings: ScoringSettings;
   rosterSlots: RosterSlot[];
 };

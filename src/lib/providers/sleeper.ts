@@ -7,6 +7,7 @@ type SleeperLeague = {
   season: string;
   total_rosters: number;
   status?: string;
+  draft_id?: string;
   scoring_settings: Record<string, number>;
   roster_positions: string[];
 };
@@ -28,6 +29,8 @@ type SleeperPlayer = {
   position?: string;
   team?: string;
   injury_status?: string;
+  search_rank?: number;
+  fantasy_positions?: string[];
 };
 
 async function sleeperFetch<T>(path: string): Promise<T> {
@@ -217,6 +220,8 @@ export async function connectSleeperLeagues(username: string, season: number) {
     sport: "nfl",
     season: Number(league.season),
     totalTeams: league.total_rosters,
+    status: league.status,
+    draftId: league.draft_id,
     scoringSettings: mapScoring(league.scoring_settings),
     rosterSlots: slotCounts(league.roster_positions),
   }));
@@ -299,4 +304,103 @@ export function initialsForName(name: string) {
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase() ?? "")
     .join("");
+}
+
+export type SleeperDraft = {
+  draft_id: string;
+  type: string;
+  status: string;
+  season: string;
+  league_id: string;
+  settings?: {
+    teams?: number;
+    rounds?: number;
+    pick_timer?: number;
+    slots_qb?: number;
+    slots_rb?: number;
+    slots_wr?: number;
+    slots_te?: number;
+    slots_flex?: number;
+    slots_k?: number;
+    slots_def?: number;
+    slots_bn?: number;
+  };
+  draft_order?: Record<string, number>;
+  slot_to_roster_id?: Record<string, number>;
+  metadata?: { scoring_type?: string; name?: string };
+};
+
+export type SleeperDraftPick = {
+  player_id: string;
+  picked_by: string;
+  roster_id: string;
+  round: number;
+  draft_slot: number;
+  pick_no: number;
+  metadata?: {
+    first_name?: string;
+    last_name?: string;
+    position?: string;
+    team?: string;
+    injury_status?: string;
+  };
+  is_keeper?: boolean | null;
+};
+
+export async function getSleeperLeagueDrafts(leagueId: string) {
+  return sleeperFetch<SleeperDraft[]>(`/league/${leagueId}/drafts`);
+}
+
+export async function getSleeperDraft(draftId: string) {
+  return sleeperFetch<SleeperDraft>(`/draft/${draftId}`);
+}
+
+export async function getSleeperDraftPicks(draftId: string) {
+  return sleeperFetch<SleeperDraftPick[]>(`/draft/${draftId}/picks`);
+}
+
+export function pickPlayerName(pick: SleeperDraftPick) {
+  if (pick.metadata?.first_name || pick.metadata?.last_name) {
+    return [pick.metadata.first_name, pick.metadata.last_name]
+      .filter(Boolean)
+      .join(" ");
+  }
+  return `Player ${pick.player_id}`;
+}
+
+export function countRosterNeeds(
+  rosterPositions: string[],
+  ownedPositions: string[]
+) {
+  const slotCounts = new Map<string, number>();
+  for (const slot of rosterPositions) {
+    if (slot === "BN" || slot === "IR") continue;
+    slotCounts.set(slot, (slotCounts.get(slot) ?? 0) + 1);
+  }
+
+  const ownedCounts = new Map<string, number>();
+  for (const position of ownedPositions) {
+    ownedCounts.set(position, (ownedCounts.get(position) ?? 0) + 1);
+  }
+
+  const needs: Array<{ slot: string; needed: number }> = [];
+  for (const [slot, total] of slotCounts.entries()) {
+    let filled = 0;
+    if (slot === "FLEX" || slot === "SUPER_FLEX") {
+      filled = Math.min(
+        total,
+        ownedPositions.filter((pos) =>
+          slot === "SUPER_FLEX"
+            ? ["QB", "RB", "WR", "TE"].includes(pos)
+            : ["RB", "WR", "TE"].includes(pos)
+        ).length
+      );
+    } else {
+      filled = Math.min(total, ownedCounts.get(slot) ?? 0);
+    }
+    const needed = Math.max(0, total - filled);
+    if (needed > 0) needs.push({ slot, needed });
+  }
+
+  return needs.sort((a, b) => b.needed - a.needed);
 }

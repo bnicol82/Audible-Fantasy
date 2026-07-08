@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { AskScreen } from "@/components/AskScreen";
 import { ConnectScreen } from "@/components/ConnectScreen";
+import { DraftScreen } from "@/components/DraftScreen";
 import { MoreScreen } from "@/components/MoreScreen";
 import { MyTeamScreen } from "@/components/MyTeamScreen";
 import { OnboardingScreen } from "@/components/OnboardingScreen";
@@ -12,17 +13,21 @@ import { SettingsScreen } from "@/components/SettingsScreen";
 import { StartSitScreen } from "@/components/StartSitScreen";
 import { AppShell, TabBar } from "@/components/ui";
 import { WaiversScreen } from "@/components/WaiversScreen";
+import type { AppPhase } from "@/lib/app-phase";
 import { STORAGE_KEYS, type NflTeam } from "@/lib/nfl-teams";
 import {
   clearStoredLeague,
+  getStoredAppPhase,
   getStoredLeagueId,
   isDemoMode,
   setDemoMode,
+  setDraftDemoMode,
+  setStoredAppPhase,
   setStoredLeague,
 } from "@/lib/session";
 import { useTheme } from "@/lib/theme/ThemeProvider";
 
-type Tab = "team" | "ask" | "waivers" | "more";
+type Tab = "team" | "ask" | "waivers" | "draft" | "more";
 type View = Tab | "startsit" | "paywall" | "team-detail" | "settings";
 
 const LEAGUE_IMPORT_ENABLED = true;
@@ -32,6 +37,7 @@ export default function Home() {
   const [onboarded, setOnboarded] = useState(false);
   const [connected, setConnected] = useState(false);
   const [leagueId, setLeagueId] = useState<string | null>(null);
+  const [appPhase, setAppPhase] = useState<AppPhase>("in_season");
   const [isPro, setIsPro] = useState(false);
   const [view, setView] = useState<View>("team");
   const [hydrated, setHydrated] = useState(false);
@@ -40,6 +46,7 @@ export default function Home() {
     const wasOnboarded = localStorage.getItem(STORAGE_KEYS.onboarded) === "true";
     setOnboarded(wasOnboarded);
     setIsPro(localStorage.getItem(STORAGE_KEYS.isPro) === "true");
+    setAppPhase(getStoredAppPhase() ?? "in_season");
 
     if (LEAGUE_IMPORT_ENABLED) {
       const storedLeagueId = getStoredLeagueId();
@@ -55,6 +62,41 @@ export default function Home() {
     setHydrated(true);
   }, []);
 
+  useEffect(() => {
+    if (!hydrated || !leagueId || isDemoMode()) return;
+
+    let cancelled = false;
+
+    async function syncPhaseFromLeague() {
+      const activeLeagueId = leagueId;
+      if (!activeLeagueId) return;
+
+      try {
+        const { getOrCreateProfileId } = await import("@/lib/session");
+        const profileId = getOrCreateProfileId();
+        const res = await fetch(
+          `/api/leagues/active?profileId=${encodeURIComponent(profileId)}&leagueId=${encodeURIComponent(activeLeagueId)}`
+        );
+        const json = await res.json();
+        if (!cancelled && res.ok && json.league?.phase) {
+          const stored = getStoredAppPhase();
+          const nextPhase = stored ?? json.league.phase;
+          setAppPhase(nextPhase);
+          if (!stored) {
+            setStoredAppPhase(nextPhase);
+          }
+        }
+      } catch {
+        // Keep current phase
+      }
+    }
+
+    syncPhaseFromLeague();
+    return () => {
+      cancelled = true;
+    };
+  }, [hydrated, leagueId]);
+
   const handleOnboardingComplete = (team: NflTeam) => {
     setTeam(team);
     localStorage.setItem(STORAGE_KEYS.onboarded, "true");
@@ -66,27 +108,54 @@ export default function Home() {
   const handleConnect = ({
     leagueId: nextLeagueId,
     username,
+    phase,
   }: {
     leagueId: string;
     username: string;
+    phase?: AppPhase;
   }) => {
     setStoredLeague(nextLeagueId, username);
+    if (phase) {
+      setStoredAppPhase(phase);
+      setAppPhase(phase);
+    }
     setLeagueId(nextLeagueId);
     setConnected(true);
-    setView("team");
+    setView(phase === "draft" ? "draft" : "team");
   };
 
   const handleSkipDemo = () => {
     setDemoMode();
+    setAppPhase("in_season");
     setLeagueId(null);
     setConnected(true);
     setView("team");
+  };
+
+  const handleDraftDemo = () => {
+    setDraftDemoMode();
+    setAppPhase("draft");
+    setLeagueId(null);
+    setConnected(true);
+    setView("draft");
+  };
+
+  const handlePhaseChange = (phase: AppPhase) => {
+    setStoredAppPhase(phase);
+    setAppPhase(phase);
+    if (phase === "draft" && view === "waivers") {
+      setView("draft");
+    }
+    if (phase !== "draft" && view === "draft") {
+      setView("team");
+    }
   };
 
   const handleDisconnect = () => {
     clearStoredLeague();
     setLeagueId(null);
     setConnected(false);
+    setAppPhase("in_season");
     setView("team");
   };
 
@@ -105,9 +174,10 @@ export default function Home() {
       ? "team"
       : view === "settings"
         ? "more"
-        : view;
+        : (view as Tab);
 
   const showTabBar = onboarded && connected && view !== "paywall" && view !== "settings";
+  const isDraftMode = appPhase === "draft";
 
   function renderScreen() {
     if (!onboarded) {
@@ -116,7 +186,11 @@ export default function Home() {
 
     if (LEAGUE_IMPORT_ENABLED && !connected) {
       return (
-        <ConnectScreen onConnect={handleConnect} onSkipDemo={handleSkipDemo} />
+        <ConnectScreen
+          onConnect={handleConnect}
+          onSkipDemo={handleSkipDemo}
+          onDraftDemo={handleDraftDemo}
+        />
       );
     }
 
@@ -127,14 +201,28 @@ export default function Home() {
         return isPro ? (
           <ProDashboardScreen onSelectTeam={() => setView("team-detail")} />
         ) : (
-          <MyTeamScreen leagueId={leagueId} onStartSit={() => setView("startsit")} />
+          <MyTeamScreen
+            leagueId={leagueId}
+            isDraftMode={isDraftMode}
+            onStartSit={() => setView("startsit")}
+            onOpenDraft={() => setView("draft")}
+          />
         );
       case "team-detail":
         return (
-          <MyTeamScreen leagueId={leagueId} onStartSit={() => setView("startsit")} />
+          <MyTeamScreen
+            leagueId={leagueId}
+            isDraftMode={isDraftMode}
+            onStartSit={() => setView("startsit")}
+            onOpenDraft={() => setView("draft")}
+          />
         );
       case "ask":
-        return <AskScreen leagueId={leagueId} />;
+        return <AskScreen leagueId={leagueId} appPhase={appPhase} />;
+      case "draft":
+        return (
+          <DraftScreen leagueId={leagueId} onAskDraft={() => setView("ask")} />
+        );
       case "waivers":
         return <WaiversScreen leagueId={leagueId} />;
       case "startsit":
@@ -151,6 +239,8 @@ export default function Home() {
             onStartSit={() => setView("startsit")}
             onPaywall={() => setView("paywall")}
             isPro={isPro}
+            appPhase={appPhase}
+            onPhaseChange={handlePhaseChange}
             onDisconnect={LEAGUE_IMPORT_ENABLED ? handleDisconnect : undefined}
           />
         );
@@ -173,7 +263,12 @@ export default function Home() {
         return isPro ? (
           <ProDashboardScreen onSelectTeam={() => setView("team-detail")} />
         ) : (
-          <MyTeamScreen leagueId={leagueId} onStartSit={() => setView("startsit")} />
+          <MyTeamScreen
+            leagueId={leagueId}
+            isDraftMode={isDraftMode}
+            onStartSit={() => setView("startsit")}
+            onOpenDraft={() => setView("draft")}
+          />
         );
     }
   }
@@ -184,7 +279,13 @@ export default function Home() {
     <AppShell
       tabBar={
         showTabBar ? (
-          <TabBar active={activeTab} onChange={handleTabChange} isPro={isPro} />
+          <TabBar
+            active={activeTab}
+            onChange={handleTabChange}
+            dimmed={false}
+            isPro={isPro}
+            appPhase={appPhase}
+          />
         ) : undefined
       }
     >

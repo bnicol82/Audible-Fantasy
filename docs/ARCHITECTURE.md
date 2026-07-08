@@ -47,6 +47,7 @@ db/
 - [x] Start/Sit and Waivers screens powered by Sleeper tools (demo fallback)
 - [x] Settings page (league, roster slots, scoring rules, appearance)
 - [x] Player cache / projections pipeline in Neon
+- [x] Draft Mode — pre-draft UI, draft board, and AI draft tools
 - [ ] Scoring computation tests
 
 ## API routes
@@ -57,6 +58,7 @@ db/
 | `POST /api/leagues/sync` | Persist league + roster to Neon |
 | `GET /api/leagues/active` | Load synced roster + matchup + cached projections |
 | `GET /api/leagues/settings` | League info, roster slots, scoring rules |
+| `GET /api/fantasy/draft` | Draft board, roster needs, and targets |
 | `POST /api/chat` | Streaming AI chat (requires `ANTHROPIC_API_KEY`) |
 | `GET /api/fantasy/start-sit` | Start/sit comparison with cached projections |
 | `GET /api/fantasy/waivers` | Trending waiver adds |

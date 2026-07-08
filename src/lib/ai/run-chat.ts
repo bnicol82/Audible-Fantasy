@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { aiTools, buildSystemPrompt } from "@/lib/ai/tools";
+import { getToolsForPhase, buildSystemPrompt } from "@/lib/ai/tools";
 import { executeTool } from "@/lib/ai/execute-tools";
 import type { ToolContext } from "@/lib/ai/tool-context";
 import type { LeagueChatContext } from "@/lib/leagues/context";
@@ -32,6 +32,7 @@ export async function runChatWithTools(input: {
 }) {
   const client = new Anthropic({ apiKey: input.apiKey });
   const system = buildSystemPrompt(input.leagueContext);
+  const tools = getToolsForPhase(input.leagueContext.phase ?? input.toolContext.phase);
   let currentMessages: AnthropicMessage[] = input.messages.map((message) => ({
     role: message.role,
     content: message.content,
@@ -44,7 +45,7 @@ export async function runChatWithTools(input: {
       model: CHAT_MODEL,
       max_tokens: 1024,
       system,
-      tools: aiTools,
+      tools,
       messages: currentMessages,
     });
 

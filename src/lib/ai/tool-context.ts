@@ -1,9 +1,15 @@
+import type { AppPhase } from "@/lib/app-phase";
+
 export type ToolContext = {
   externalLeagueId?: string;
   season: number;
   week: number;
   scoringFormat: string;
   rosterPlayerIds: string[];
+  phase?: AppPhase;
+  profileId?: string;
+  leagueId?: string;
+  draftedPlayerIds?: string[];
 };
 
 export function demoToolContext(): ToolContext {
