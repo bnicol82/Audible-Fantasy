@@ -89,13 +89,9 @@ export const aiTools: Tool[] = [
   },
 ];
 
-export function buildSystemPrompt(context: {
-  leagueName: string;
-  scoringFormat: string;
-  rosterSummary: string;
-  week: number;
-  record: string;
-}) {
+import type { LeagueChatContext } from "@/lib/leagues/context";
+
+export function buildSystemPrompt(context: LeagueChatContext) {
   return `You are Audible, a fantasy football assistant grounded in real data.
 
 RULES:

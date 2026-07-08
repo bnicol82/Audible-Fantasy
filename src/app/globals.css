@@ -680,6 +680,34 @@ button {
   box-shadow: var(--shadow-inset);
 }
 
+.inputbar input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: inherit;
+  font: inherit;
+  min-width: 0;
+}
+
+.inputbar input::placeholder {
+  color: var(--chalk-35);
+}
+
+.suggest button.pill {
+  cursor: pointer;
+}
+
+.suggest button.pill:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.send:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .send {
   width: 36px;
   height: 36px;
