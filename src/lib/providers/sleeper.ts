@@ -22,6 +22,7 @@ type SleeperLeagueUser = {
   metadata?: { team_name?: string };
 };
 type SleeperPlayer = {
+  player_id?: string;
   full_name?: string;
   position?: string;
   team?: string;
@@ -218,4 +219,74 @@ export async function connectSleeperLeagues(username: string, season: number) {
     scoringSettings: mapScoring(league.scoring_settings),
     rosterSlots: slotCounts(league.roster_positions),
   }));
+}
+
+export async function connectSleeperLeaguesAcrossSeasons(
+  username: string,
+  seasons: number[]
+) {
+  const seen = new Set<string>();
+  const merged = [];
+
+  for (const season of seasons) {
+    const leagues = await connectSleeperLeagues(username, season);
+    for (const league of leagues) {
+      if (seen.has(league.externalLeagueId)) continue;
+      seen.add(league.externalLeagueId);
+      merged.push(league);
+    }
+  }
+
+  return merged;
+}
+
+export async function getSleeperTrendingAdds(
+  lookbackHours = 24,
+  limit = 25
+) {
+  return sleeperFetch<Array<{ player_id: string; count: number }>>(
+    `/players/nfl/trending/add?lookback_hours=${lookbackHours}&limit=${limit}`
+  );
+}
+
+export async function getSleeperWeeklyStats(season: number, week: number) {
+  return sleeperFetch<
+    Array<{
+      player_id: number | string;
+      pts_ppr?: number;
+      pts_half_ppr?: number;
+      pts_std?: number;
+    }>
+  >(`/stats/nfl/regular/${season}/${week}`);
+}
+
+export function resolvePlayers(
+  players: Record<string, SleeperPlayer>,
+  identifiers: string[]
+) {
+  const entries = Object.entries(players).map(([id, player]) => ({
+    ...player,
+    player_id: id,
+  }));
+
+  return identifiers.map((identifier) => {
+    const byId = players[identifier];
+    if (byId) return { ...byId, player_id: identifier };
+
+    const needle = identifier.toLowerCase();
+    return (
+      entries.find((player) => player.full_name?.toLowerCase() === needle) ??
+      entries.find((player) => player.full_name?.toLowerCase().includes(needle)) ??
+      { player_id: identifier, full_name: identifier, position: "UNK", team: undefined }
+    );
+  });
+}
+
+export function initialsForName(name: string) {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
 }

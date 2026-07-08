@@ -42,8 +42,10 @@ db/
 - [x] AI tool definitions + chat API skeleton
 - [x] Neon linked on Vercel + migrations applied
 - [x] Sleeper league sync → Postgres persistence
-- [ ] AI chat with tool execution against DB
+- [x] AI chat with tool execution against Sleeper data
 - [x] Ask Audible wired to streaming chat API with league context
+- [x] Start/Sit and Waivers screens powered by Sleeper tools (demo fallback)
+- [ ] Player cache / projections pipeline in Neon
 - [ ] Scoring computation tests
 
 ## API routes

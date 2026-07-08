@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { buildSystemPrompt } from "@/lib/ai/tools";
+import { buildToolContextFromRequest } from "@/lib/ai/execute-tools";
+import { runChatWithTools, streamTextAsAnthropicSse } from "@/lib/ai/run-chat";
 import {
   buildLeagueChatContext,
   demoLeagueChatContext,
@@ -22,13 +23,7 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const {
-    messages,
-    message,
-    leagueContext,
-    profileId,
-    leagueId,
-  } = body as {
+  const { messages, message, leagueContext, profileId, leagueId } = body as {
     messages?: ChatMessage[];
     message?: string;
     leagueContext?: LeagueChatContext;
@@ -63,37 +58,35 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Message is required" }, { status: 400 });
   }
 
-  const system = buildSystemPrompt(resolvedContext);
-
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 1024,
-      system,
-      messages: conversation.map((entry) => ({
-        role: entry.role,
-        content: entry.content,
-      })),
-      stream: true,
-    }),
+  const toolContext = await buildToolContextFromRequest({
+    profileId,
+    leagueId,
+    leagueContext: resolvedContext,
   });
 
-  if (!response.ok) {
-    const err = await response.text();
-    return NextResponse.json({ error: err }, { status: response.status });
+  if (resolvedContext.externalLeagueId) {
+    toolContext.externalLeagueId = resolvedContext.externalLeagueId;
+    toolContext.season = resolvedContext.season ?? toolContext.season;
   }
 
-  return new Response(response.body, {
-    headers: {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
-      Connection: "keep-alive",
-    },
-  });
+  try {
+    const result = await runChatWithTools({
+      apiKey,
+      messages: conversation,
+      leagueContext: resolvedContext,
+      toolContext,
+    });
+
+    return new Response(streamTextAsAnthropicSse(result.content), {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+        "X-Audible-Tools": result.toolsUsed.join(","),
+      },
+    });
+  } catch (error) {
+    const fallback = error instanceof Error ? error.message : "Chat failed";
+    return NextResponse.json({ error: fallback }, { status: 500 });
+  }
 }
