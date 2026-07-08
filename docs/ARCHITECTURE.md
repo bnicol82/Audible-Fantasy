@@ -43,6 +43,7 @@ db/
 - [x] Neon linked on Vercel + migrations applied
 - [x] Sleeper league sync → Postgres persistence
 - [ ] AI chat with tool execution against DB
+- [x] Ask Audible wired to streaming chat API with league context
 - [ ] Scoring computation tests
 
 ## API routes

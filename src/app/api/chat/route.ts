@@ -1,5 +1,16 @@
 import { NextResponse } from "next/server";
 import { buildSystemPrompt } from "@/lib/ai/tools";
+import {
+  buildLeagueChatContext,
+  demoLeagueChatContext,
+  type LeagueChatContext,
+} from "@/lib/leagues/context";
+import { getActiveLeague } from "@/lib/leagues/sync";
+
+type ChatMessage = {
+  role: "user" | "assistant";
+  content: string;
+};
 
 export async function POST(request: Request) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -10,21 +21,49 @@ export async function POST(request: Request) {
     );
   }
 
-  const { message, leagueContext } = await request.json();
+  const body = await request.json();
+  const {
+    messages,
+    message,
+    leagueContext,
+    profileId,
+    leagueId,
+  } = body as {
+    messages?: ChatMessage[];
+    message?: string;
+    leagueContext?: LeagueChatContext;
+    profileId?: string;
+    leagueId?: string;
+  };
 
-  if (!message?.trim()) {
+  let resolvedContext = leagueContext as LeagueChatContext | undefined;
+
+  if (!resolvedContext && profileId && leagueId && process.env.DATABASE_URL) {
+    try {
+      const league = await getActiveLeague(profileId, leagueId);
+      if (league) {
+        resolvedContext = buildLeagueChatContext(league);
+      }
+    } catch {
+      // Fall back to demo context below
+    }
+  }
+
+  if (!resolvedContext) {
+    resolvedContext = demoLeagueChatContext();
+  }
+
+  const conversation: ChatMessage[] = Array.isArray(messages)
+    ? messages.filter((entry) => entry.content?.trim())
+    : message?.trim()
+      ? [{ role: "user", content: message.trim() }]
+      : [];
+
+  if (!conversation.length) {
     return NextResponse.json({ error: "Message is required" }, { status: 400 });
   }
 
-  const system = buildSystemPrompt(
-    leagueContext ?? {
-      leagueName: "The Gauntlet League",
-      scoringFormat: "half-PPR",
-      rosterSummary: "Josh Allen, Bijan Robinson, Jahmyr Gibbs (Q), Ja'Marr Chase, Puka Nacua, Trey McBride, Zay Flowers",
-      week: 5,
-      record: "3-1",
-    }
-  );
+  const system = buildSystemPrompt(resolvedContext);
 
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -37,7 +76,10 @@ export async function POST(request: Request) {
       model: "claude-sonnet-4-20250514",
       max_tokens: 1024,
       system,
-      messages: [{ role: "user", content: message }],
+      messages: conversation.map((entry) => ({
+        role: entry.role,
+        content: entry.content,
+      })),
       stream: true,
     }),
   });

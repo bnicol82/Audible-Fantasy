@@ -112,7 +112,7 @@ export default function Home() {
           <MyTeamScreen leagueId={leagueId} onStartSit={() => setView("startsit")} />
         );
       case "ask":
-        return <AskScreen />;
+        return <AskScreen leagueId={leagueId} />;
       case "waivers":
         return <WaiversScreen />;
       case "startsit":
