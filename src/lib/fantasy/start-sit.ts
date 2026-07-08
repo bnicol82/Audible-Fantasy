@@ -1,14 +1,12 @@
 import { startSitComparison } from "@/lib/data";
 import { getActiveLeague } from "@/lib/leagues/sync";
-import {
-  getProjectionsBySleeperIds,
-  normalizeScoringFormat,
-} from "@/lib/cache/players";
+import { getProjectionsBySleeperIds } from "@/lib/cache/players";
 import {
   getSleeperNflState,
   getSleeperWeeklyStats,
   initialsForName,
 } from "@/lib/providers/sleeper";
+import { computeFantasyPointsWithFallback, toRawStatLine } from "@/lib/scoring/engine";
 
 export type StartSitPayload = typeof startSitComparison & {
   source: "live" | "demo";
@@ -22,14 +20,19 @@ function demoPayload(): StartSitPayload {
 function pickFlexDecision(
   roster: Array<{
     slot: string;
+    rosterStatus: "active" | "ir" | "taxi";
     playerExternalId: string;
     playerName: string;
     position: string;
     nflTeam: string | null;
   }>
 ) {
-  const flexStarter = roster.find((player) => player.slot === "FLEX");
-  const benchSkill = roster.filter(
+  // IR/taxi players are not real bench depth — never surface them as a flex-swap
+  // candidate, even though they used to be indistinguishable from "BN".
+  const eligibleBench = roster.filter((player) => player.rosterStatus === "active");
+
+  const flexStarter = eligibleBench.find((player) => player.slot === "FLEX");
+  const benchSkill = eligibleBench.filter(
     (player) =>
       player.slot === "BN" && ["RB", "WR", "TE"].includes(player.position)
   );
@@ -38,10 +41,10 @@ function pickFlexDecision(
     return [flexStarter, benchSkill[0]];
   }
 
-  const starters = roster.filter(
+  const starters = eligibleBench.filter(
     (player) => player.slot !== "BN" && ["WR", "RB", "TE"].includes(player.position)
   );
-  const bench = roster.filter(
+  const bench = eligibleBench.filter(
     (player) => player.slot === "BN" && ["WR", "RB", "TE"].includes(player.position)
   );
 
@@ -75,14 +78,13 @@ export async function getStartSitComparison(input: {
       stats = Object.fromEntries(
         weekly.map((row) => [
           String(row.player_id),
-          row.pts_half_ppr ?? row.pts_ppr ?? row.pts_std ?? 0,
+          computeFantasyPointsWithFallback(toRawStatLine(row), league.scoringSettings),
         ])
       );
     } catch {
       // Offseason stats may be missing
     }
 
-    const scoringFormat = normalizeScoringFormat(league.scoring);
     let projections = new Map<string, number>();
     try {
       const cached = await getProjectionsBySleeperIds({
@@ -92,7 +94,7 @@ export async function getStartSitComparison(input: {
         ],
         season: league.season,
         week: league.week,
-        scoringFormat,
+        scoringSettings: league.scoringSettings,
       });
       projections = new Map(
         cached.map((row) => [row.sleeperId, row.projectedPoints] as const)
@@ -145,7 +147,7 @@ export async function getStartSitComparison(input: {
             aProj !== null && bProj !== null ? (winner as "a" | "b") : null,
         },
         {
-          label: "Last Week (Half PPR)",
+          label: `Last Week (${league.scoring})`,
           a: aPoints !== null ? aPoints.toFixed(1) : "—",
           b: bPoints !== null ? bPoints.toFixed(1) : "—",
           winner:

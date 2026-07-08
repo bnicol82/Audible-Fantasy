@@ -1,6 +1,6 @@
 import type { Tool } from "@anthropic-ai/sdk/resources/messages.mjs";
 import type { AppPhase } from "@/lib/app-phase";
-import type { LeagueChatContext } from "@/lib/leagues/context";
+import { formatLeagueRulesSummary, type LeagueChatContext } from "@/lib/leagues/context";
 
 export const inSeasonAiTools: Tool[] = [
   {
@@ -89,6 +89,57 @@ export const inSeasonAiTools: Tool[] = [
       required: ["player_ids", "week"],
     },
   },
+  {
+    name: "get_game_conditions",
+    description:
+      "Weather (temp, wind, precipitation) and Vegas lines (spread, total, implied team total) for a player's upcoming game. Only meaningful for outdoor stadiums and games within about a week of kickoff.",
+    input_schema: {
+      type: "object",
+      properties: {
+        player_ids: { type: "array", items: { type: "string" } },
+        week: { type: "integer" },
+      },
+      required: ["player_ids"],
+    },
+  },
+  {
+    name: "get_injury_report",
+    description:
+      "Detailed injury status beyond a single flag: body part, practice participation trend, and recent injury news for players.",
+    input_schema: {
+      type: "object",
+      properties: {
+        player_ids: { type: "array", items: { type: "string" } },
+      },
+      required: ["player_ids"],
+    },
+  },
+  {
+    name: "get_expert_consensus",
+    description:
+      "Consensus ranking/tier for players this week. Check the `source` field on the result — 'fantasypros_ecr' is real licensed expert consensus, 'nflverse_synthetic' is a synthetic ADP+usage-trend rank and must be described as such, never as real expert consensus.",
+    input_schema: {
+      type: "object",
+      properties: {
+        player_ids: { type: "array", items: { type: "string" } },
+        week: { type: "integer" },
+      },
+      required: ["player_ids"],
+    },
+  },
+  {
+    name: "get_advanced_stats",
+    description:
+      "Target share and air yards share for a player from recent weekly usage — useful for spotting role changes ADP/projections lag behind.",
+    input_schema: {
+      type: "object",
+      properties: {
+        player_ids: { type: "array", items: { type: "string" } },
+        week: { type: "integer" },
+      },
+      required: ["player_ids"],
+    },
+  },
 ];
 
 export const draftAiTools: Tool[] = [
@@ -173,12 +224,17 @@ DRAFT CONTEXT:
 ${context.draftSummary ? `- ${context.draftSummary}` : ""}`;
   }
 
+  const rulesSummary = context.leagueRules ? formatLeagueRulesSummary(context.leagueRules) : null;
+
   return `You are Audible, a fantasy football assistant grounded in real data.
 
 RULES:
 - Never invent stats or injury statuses. Use tools for every factual claim.
-- Compute values under the league's actual scoring settings (${context.scoringFormat}).
-- State uncertainty honestly for injuries, weather, and coaching decisions.
+- Compute values under the league's actual scoring settings (${context.scoringFormat}) — get_player_stats and get_projections already do this for you using the league's real point-value rules, not a generic PPR bucket.
+- Before making any claim about weather or Vegas lines, call get_game_conditions — don't assert conditions you haven't looked up.
+- Before making any claim about injury severity or timeline, call get_injury_report — Sleeper's roster data only has a coarse status flag.
+- If you call get_expert_consensus, check its 'source' field: only describe 'fantasypros_ecr' results as real expert consensus. Describe 'nflverse_synthetic' results as an internal usage-trend estimate, never as "experts say."
+- Respect this league's actual waiver/trade/playoff rules (below) — don't assume generic defaults.
 - Be decisive: "Start Nacua" not "it depends on many factors."
 - Show the data behind recommendations (projections, matchups, target share).
 
@@ -186,5 +242,5 @@ LEAGUE CONTEXT:
 - League: ${context.leagueName}
 - Week: ${context.week}
 - Record: ${context.record}
-- Roster: ${context.rosterSummary}`;
+- Roster: ${context.rosterSummary}${rulesSummary ? `\n- Rules: ${rulesSummary}` : ""}`;
 }

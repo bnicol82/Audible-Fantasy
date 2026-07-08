@@ -1,11 +1,9 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { getToolsForPhase, buildSystemPrompt } from "@/lib/ai/tools";
 import { executeTool } from "@/lib/ai/execute-tools";
+import { getModelChain, type ModelTier } from "@/lib/ai/models";
 import type { ToolContext } from "@/lib/ai/tool-context";
 import type { LeagueChatContext } from "@/lib/leagues/context";
-
-/** Retired 2026-06-15 — use claude-sonnet-4-6 or ANTHROPIC_MODEL env override */
-const CHAT_MODEL = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-6";
 
 type ChatMessage = {
   role: "user" | "assistant";
@@ -24,11 +22,39 @@ function extractText(content: Anthropic.ContentBlock[]) {
     .join("");
 }
 
+// Walks the tier's model chain, only advancing past a 404 (retired/unknown model ID) — an
+// auth or rate-limit error would fail identically on every model in the chain, so those
+// propagate immediately instead of masking the real problem behind a confusing final error.
+async function createWithFallback(
+  client: Anthropic,
+  tier: ModelTier,
+  params: Omit<Anthropic.MessageCreateParamsNonStreaming, "model">
+): Promise<Anthropic.Message> {
+  const chain = getModelChain(tier);
+  let lastError: unknown;
+
+  for (const model of chain) {
+    try {
+      return await client.messages.create({ ...params, model });
+    } catch (error) {
+      lastError = error;
+      if (error instanceof Anthropic.NotFoundError) {
+        console.warn(`Model "${model}" unavailable (404) — trying next in ${tier} chain`);
+        continue;
+      }
+      throw error;
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error(`All models in "${tier}" chain failed`);
+}
+
 export async function runChatWithTools(input: {
   apiKey: string;
   messages: ChatMessage[];
   leagueContext: LeagueChatContext;
   toolContext: ToolContext;
+  tier?: ModelTier;
 }) {
   const client = new Anthropic({ apiKey: input.apiKey });
   const system = buildSystemPrompt(input.leagueContext);
@@ -41,8 +67,7 @@ export async function runChatWithTools(input: {
   const toolsUsed: string[] = [];
 
   for (let step = 0; step < 6; step += 1) {
-    const response = await client.messages.create({
-      model: CHAT_MODEL,
+    const response = await createWithFallback(client, input.tier ?? "fast", {
       max_tokens: 1024,
       system,
       tools,

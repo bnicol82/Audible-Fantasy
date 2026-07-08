@@ -4,8 +4,10 @@ import {
   getSleeperPlayers,
   getSleeperProjections,
   getSleeperTrendingAdds,
+  type SleeperProjectionRow,
 } from "@/lib/providers/sleeper";
-import type { NormalizedRosterEntry } from "@/lib/providers/types";
+import type { NormalizedRosterEntry, ScoringSettings } from "@/lib/providers/types";
+import { computeFantasyPointsWithFallback, toRawStatLine } from "@/lib/scoring/engine";
 
 export type CachedProjection = {
   playerId: string;
@@ -14,24 +16,6 @@ export type CachedProjection = {
   position: string | null;
   team: string | null;
   projectedPoints: number;
-  scoringFormat: string;
-};
-
-type SleeperProjectionRow = {
-  player_id?: string;
-  player?: {
-    full_name?: string;
-    first_name?: string;
-    last_name?: string;
-    position?: string;
-    team?: string;
-    injury_status?: string;
-  };
-  stats?: {
-    pts_ppr?: number;
-    pts_half_ppr?: number;
-    pts_std?: number;
-  };
 };
 
 export function normalizeScoringFormat(format?: string) {
@@ -42,6 +26,11 @@ export function normalizeScoringFormat(format?: string) {
   return "half_ppr";
 }
 
+// Legacy fallback for callers that only have a coarse format bucket, no full scoring dict
+// (e.g. manual-provider leagues where `raw` is always `{}`). Everywhere a real league is
+// known, prefer computeFantasyPointsWithFallback with its actual ScoringSettings instead —
+// this only picks one of Sleeper's own pre-baked standard/half/full-PPR numbers, it does
+// not compute anything under the league's actual custom rules.
 function pickProjectedPoints(
   stats: SleeperProjectionRow["stats"],
   scoringFormat: string
@@ -65,6 +54,8 @@ export async function upsertPlayerBySleeperId(
   const player = allPlayers[sleeperId];
   if (!player) return null;
 
+  const externalIds = { sleeper: sleeperId, ...(player.gsis_id ? { gsis: player.gsis_id } : {}) };
+
   const existing = (await db`
     select id
     from players
@@ -80,6 +71,7 @@ export async function upsertPlayerBySleeperId(
         team = ${player.team ?? null},
         position = ${player.position ?? null},
         status = ${player.injury_status ?? null},
+        external_ids = external_ids || ${JSON.stringify(externalIds)}::jsonb,
         metadata = ${JSON.stringify({ injury_status: player.injury_status })}::jsonb,
         updated_at = now()
       where id = ${existing[0].id}::uuid
@@ -95,7 +87,7 @@ export async function upsertPlayerBySleeperId(
       ${player.team ?? null},
       ${player.position ?? null},
       ${player.injury_status ?? null},
-      ${JSON.stringify({ sleeper: sleeperId })}::jsonb,
+      ${JSON.stringify(externalIds)}::jsonb,
       ${JSON.stringify({ injury_status: player.injury_status })}::jsonb
     )
     returning id
@@ -104,18 +96,17 @@ export async function upsertPlayerBySleeperId(
   return inserted[0]?.id ?? null;
 }
 
-export async function syncProjectionsForWeek(input?: {
-  season?: number;
-  week?: number;
-  scoringFormat?: string;
-}) {
+// Persists Sleeper's raw projection payload (bio + raw stat line) once per player/week,
+// independent of any league's scoring format — computing actual fantasy points under a
+// specific league's rules happens at read time in getProjectionsBySleeperIds, since the
+// same cached row now serves every league regardless of its scoring settings.
+export async function syncProjectionsForWeek(input?: { season?: number; week?: number }) {
   const nflState = await getSleeperNflState();
   const season = input?.season ?? Number(nflState.season);
   const week = input?.week ?? nflState.week;
-  const scoringFormat = input?.scoringFormat ?? "half_ppr";
 
   const [rows, allPlayers] = await Promise.all([
-    getSleeperProjections(season, week) as Promise<SleeperProjectionRow[]>,
+    getSleeperProjections(season, week),
     getSleeperPlayers(),
   ]);
 
@@ -131,7 +122,6 @@ export async function syncProjectionsForWeek(input?: {
     if (!playerId) continue;
     playersUpserted += 1;
 
-    const projectedPoints = pickProjectedPoints(row.stats, scoringFormat);
     await db`
       insert into projections (player_id, season, week, source, raw)
       values (
@@ -139,7 +129,7 @@ export async function syncProjectionsForWeek(input?: {
         ${season},
         ${week},
         'sleeper',
-        ${JSON.stringify({ ...row, projectedPoints, scoringFormat })}::jsonb
+        ${JSON.stringify(row)}::jsonb
       )
       on conflict (player_id, season, week, source) do update set
         raw = excluded.raw
@@ -147,13 +137,7 @@ export async function syncProjectionsForWeek(input?: {
     projectionsUpserted += 1;
   }
 
-  return {
-    season,
-    week,
-    scoringFormat,
-    playersUpserted,
-    projectionsUpserted,
-  };
+  return { season, week, playersUpserted, projectionsUpserted };
 }
 
 export async function syncTrendingPlayers(limit = 50) {
@@ -175,7 +159,7 @@ export async function getProjectionsBySleeperIds(input: {
   sleeperIds: string[];
   season: number;
   week: number;
-  scoringFormat?: string;
+  scoringSettings: ScoringSettings;
 }) {
   if (!input.sleeperIds.length || !process.env.DATABASE_URL) return [];
 
@@ -200,36 +184,43 @@ export async function getProjectionsBySleeperIds(input: {
     name: string;
     position: string | null;
     team: string | null;
-    raw: { projectedPoints?: number; stats?: SleeperProjectionRow["stats"] };
+    raw: SleeperProjectionRow & { projectedPoints?: number };
   }>;
 
-  const scoringFormat = input.scoringFormat ?? "half_ppr";
+  return rows.map((row) => {
+    // Legacy rows synced before this change stored a pre-baked `projectedPoints` under a
+    // single generic format bucket — recompute from the real scoring dict when the raw
+    // stat line is present, otherwise fall back to whatever was cached previously.
+    const rawStats = toRawStatLine(row.raw.stats);
+    const hasRawStats = Object.keys(rawStats).length > 0;
+    const projectedPoints = hasRawStats
+      ? computeFantasyPointsWithFallback(rawStats, input.scoringSettings)
+      : (row.raw.projectedPoints ??
+        pickProjectedPoints(row.raw.stats, input.scoringSettings.format));
 
-  return rows.map((row) => ({
-    playerId: row.player_id,
-    sleeperId: row.sleeper_id,
-    name: row.name,
-    position: row.position,
-    team: row.team,
-    projectedPoints:
-      row.raw.projectedPoints ??
-      pickProjectedPoints(row.raw.stats, scoringFormat),
-    scoringFormat,
-  })) satisfies CachedProjection[];
+    return {
+      playerId: row.player_id,
+      sleeperId: row.sleeper_id,
+      name: row.name,
+      position: row.position,
+      team: row.team,
+      projectedPoints,
+    } satisfies CachedProjection;
+  });
 }
 
 export async function enrichRosterWithProjections(input: {
   roster: NormalizedRosterEntry[];
   season: number;
   week: number;
-  scoringFormat?: string;
+  scoringSettings: ScoringSettings;
 }) {
   const sleeperIds = input.roster.map((entry) => entry.playerExternalId);
   const projections = await getProjectionsBySleeperIds({
     sleeperIds,
     season: input.season,
     week: input.week,
-    scoringFormat: input.scoringFormat,
+    scoringSettings: input.scoringSettings,
   });
   const bySleeperId = new Map(
     projections.map((projection) => [projection.sleeperId, projection.projectedPoints])
@@ -250,7 +241,7 @@ export async function getCacheStatus() {
     select count(*)::int as count from projections
   `) as Array<{ count: number }>;
   const latest = (await db`
-    select season, week, max((raw->>'projectedPoints')::float) as max_proj
+    select season, week
     from projections
     where source = 'sleeper'
     group by season, week
@@ -268,15 +259,39 @@ export async function getCacheStatus() {
   };
 }
 
-export async function runCacheSync(input?: {
-  season?: number;
-  week?: number;
-  scoringFormat?: string;
-}) {
-  const [projections, trending] = await Promise.all([
-    syncProjectionsForWeek(input),
-    syncTrendingPlayers(50),
-  ]);
+function settle<T>(result: PromiseSettledResult<T>) {
+  return result.status === "fulfilled"
+    ? { ok: true as const, ...(result.value as object) }
+    : { ok: false as const, error: String(result.reason) };
+}
 
-  return { projections, trending };
+// Runs every enrichment sync job independently via Promise.allSettled — a broken/rate
+// -limited third-party source (odds, weather, nflverse) should degrade that one job, not
+// take down projections/trending along with it.
+export async function runCacheSync(input?: { season?: number; week?: number }) {
+  const { syncNflverseWeeklyAdvanced, syncGameConditionsForWeek, syncInjuryReports, syncExpertRankings } =
+    await import("@/lib/data-sources/sync");
+
+  const nflState = await getSleeperNflState().catch(() => null);
+  const season = input?.season ?? Number(nflState?.season ?? new Date().getFullYear());
+  const week = input?.week ?? nflState?.week ?? 1;
+
+  const [projections, trending, advanced, conditions, injuries, expertRankings] =
+    await Promise.allSettled([
+      syncProjectionsForWeek(input),
+      syncTrendingPlayers(50),
+      syncNflverseWeeklyAdvanced(season, week),
+      syncGameConditionsForWeek(season, week),
+      syncInjuryReports(season, week),
+      syncExpertRankings(season, week),
+    ]);
+
+  return {
+    projections: settle(projections),
+    trending: settle(trending),
+    advancedStats: settle(advanced),
+    gameConditions: settle(conditions),
+    injuries: settle(injuries),
+    expertRankings: settle(expertRankings),
+  };
 }

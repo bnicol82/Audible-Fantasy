@@ -1,5 +1,6 @@
 import { league, waiverTargets, type WaiverTarget } from "@/lib/data";
 import { getActiveLeague } from "@/lib/leagues/sync";
+import { computeFaabRemaining, syncLeagueTransactions } from "@/lib/leagues/transactions";
 import {
   getSleeperPlayers,
   getSleeperTrendingAdds,
@@ -34,10 +35,28 @@ export async function getWaiversBoard(input: {
     const trending = await getSleeperTrendingAdds(48, 12);
     let owned = new Set<string>();
 
+    let faabRemaining = league.faabRemaining;
     if (input.profileId && input.leagueId && process.env.DATABASE_URL) {
       const active = await getActiveLeague(input.profileId, input.leagueId);
       if (active) {
         owned = new Set(active.roster.map((player) => player.playerExternalId));
+
+        if (active.rules.waiverType === "faab" && active.externalRosterId) {
+          try {
+            await syncLeagueTransactions({
+              leagueId: active.leagueId,
+              externalLeagueId: active.externalLeagueId,
+              weeks: Array.from({ length: active.week }, (_, i) => i + 1),
+            });
+            faabRemaining = await computeFaabRemaining({
+              leagueId: active.leagueId,
+              faabBudget: active.rules.faabBudget ?? 100,
+              rosterId: active.externalRosterId,
+            });
+          } catch {
+            // Fall back to the demo constant below if transaction sync fails.
+          }
+        }
       }
     }
 
@@ -65,7 +84,7 @@ export async function getWaiversBoard(input: {
 
     return {
       source: "live" as const,
-      faabRemaining: league.faabRemaining,
+      faabRemaining,
       claimsSet: league.claimsSet,
       targets,
     };

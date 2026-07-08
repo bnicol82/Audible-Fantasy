@@ -24,13 +24,12 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json().catch(() => ({}));
-    const { season, week, scoringFormat } = body as {
+    const { season, week } = body as {
       season?: number;
       week?: number;
-      scoringFormat?: string;
     };
 
-    const result = await runCacheSync({ season, week, scoringFormat });
+    const result = await runCacheSync({ season, week });
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Sync failed";

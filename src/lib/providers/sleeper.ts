@@ -1,6 +1,26 @@
+import type { LeagueRules, RosterStatus } from "@/lib/providers/types";
+
 const SLEEPER_API = "https://api.sleeper.app/v1";
 
+// Permissive bag for the many raw counting-stat fields Sleeper's stats/projections
+// endpoints return (pass_yd, rec, fum_lost, ...) that the app doesn't otherwise model by
+// name. `unknown` (not `number | undefined`) avoids index-signature conflicts with the
+// explicit typed fields declared alongside it — narrow with `toRawStatLine()` before
+// feeding into the scoring engine.
+export type SleeperStatBlob = { [key: string]: unknown };
+
 type SleeperUser = { user_id: string; display_name: string; username: string };
+type SleeperLeagueSettings = {
+  waiver_type?: number; // 0 = rolling waivers, 1 = FAAB, 2 = reverse-standings
+  waiver_budget?: number;
+  taxi_slots?: number;
+  reserve_slots?: number;
+  playoff_week_start?: number;
+  playoff_teams?: number;
+  num_teams?: number;
+  trade_deadline?: number;
+  daily_waivers?: number;
+};
 type SleeperLeague = {
   league_id: string;
   name: string;
@@ -10,12 +30,15 @@ type SleeperLeague = {
   draft_id?: string;
   scoring_settings: Record<string, number>;
   roster_positions: string[];
+  settings?: SleeperLeagueSettings;
 };
 type SleeperRoster = {
   roster_id: number;
   owner_id: string;
   players: string[];
   starters: string[];
+  reserve?: string[] | null;
+  taxi?: string[] | null;
   settings?: { wins?: number; losses?: number; fpts?: number };
 };
 type SleeperLeagueUser = {
@@ -31,6 +54,7 @@ type SleeperPlayer = {
   injury_status?: string;
   search_rank?: number;
   fantasy_positions?: string[];
+  gsis_id?: string;
 };
 
 async function sleeperFetch<T>(path: string): Promise<T> {
@@ -48,6 +72,25 @@ function mapScoring(settings: Record<string, number>) {
   const format =
     rec >= 1 ? "ppr" : rec >= 0.5 ? "half_ppr" : rec > 0 ? "custom" : "standard";
   return { format, raw: settings } as const;
+}
+
+export function mapLeagueRules(settings?: SleeperLeagueSettings): LeagueRules {
+  const waiverType =
+    settings?.waiver_type === 1
+      ? "faab"
+      : settings?.waiver_type === 2
+        ? "reverse_standings"
+        : "rolling";
+
+  return {
+    waiverType,
+    faabBudget: waiverType === "faab" ? (settings?.waiver_budget ?? 100) : null,
+    taxiSlots: settings?.taxi_slots ?? 0,
+    irSlots: settings?.reserve_slots ?? 0,
+    playoffWeekStart: settings?.playoff_week_start ?? null,
+    playoffTeams: settings?.playoff_teams ?? null,
+    tradeDeadlineWeek: settings?.trade_deadline ?? null,
+  };
 }
 
 function slotCounts(positions: string[]) {
@@ -84,15 +127,21 @@ export async function getSleeperMatchups(leagueId: string, week: number) {
   >(`/league/${leagueId}/matchups/${week}`);
 }
 
+export type SleeperTransaction = {
+  transaction_id: string;
+  type: "waiver" | "free_agent" | "trade";
+  status: string;
+  roster_ids: number[];
+  metadata?: { notes?: string };
+  adds?: Record<string, number> | null;
+  drops?: Record<string, number> | null;
+  settings?: { waiver_bid?: number } | null;
+};
+
 export async function getSleeperTransactions(leagueId: string, week: number) {
-  return sleeperFetch<
-    Array<{
-      type: string;
-      metadata?: { notes?: string };
-      adds?: Record<string, number> | null;
-      drops?: Record<string, number> | null;
-    }>
-  >(`/league/${leagueId}/transactions/${week}`);
+  return sleeperFetch<SleeperTransaction[]>(
+    `/league/${leagueId}/transactions/${week}`
+  );
 }
 
 let playersCache: Record<string, SleeperPlayer> | null = null;
@@ -117,16 +166,26 @@ export function normalizeSleeperRosters(
     const owner = userMap.get(roster.owner_id);
     const teamName =
       owner?.metadata?.team_name ?? owner?.display_name ?? `Team ${roster.roster_id}`;
+    const reserveSet = new Set(roster.reserve ?? []);
+    const taxiSet = new Set(roster.taxi ?? []);
 
     const entries = roster.players.map((playerId) => {
       const player = players[playerId];
       const isStarter = roster.starters.includes(playerId);
+      const rosterStatus: RosterStatus = isStarter
+        ? "active"
+        : reserveSet.has(playerId)
+          ? "ir"
+          : taxiSet.has(playerId)
+            ? "taxi"
+            : "active";
       return {
         playerExternalId: playerId,
         playerName: player?.full_name ?? `Player ${playerId}`,
         position: player?.position ?? "UNK",
         nflTeam: player?.team ?? null,
-        slot: isStarter ? player?.position ?? "FLEX" : "BN",
+        slot: isStarter ? (player?.position ?? "FLEX") : rosterStatus === "ir" ? "IR" : rosterStatus === "taxi" ? "TAXI" : "BN",
+        rosterStatus,
         injuryStatus: player?.injury_status ?? null,
       };
     });
@@ -163,12 +222,15 @@ export function normalizeUserRosterEntries(
 ) {
   const owner = users.find((u) => u.user_id === roster.owner_id);
   const starterSlots = rosterPositions.filter((slot) => slot !== "BN");
+  const reserveSet = new Set(roster.reserve ?? []);
+  const taxiSet = new Set(roster.taxi ?? []);
   const entries: Array<{
     playerExternalId: string;
     playerName: string;
     position: string;
     nflTeam: string | null;
     slot: string;
+    rosterStatus: RosterStatus;
     injuryStatus?: string | null;
   }> = [];
 
@@ -180,6 +242,7 @@ export function normalizeUserRosterEntries(
       position: player?.position ?? "UNK",
       nflTeam: player?.team ?? null,
       slot: starterSlots[index] ?? "FLEX",
+      rosterStatus: "active",
       injuryStatus: player?.injury_status ?? null,
     });
   }
@@ -187,12 +250,18 @@ export function normalizeUserRosterEntries(
   for (const playerId of roster.players) {
     if (roster.starters.includes(playerId)) continue;
     const player = players[playerId];
+    const rosterStatus: RosterStatus = reserveSet.has(playerId)
+      ? "ir"
+      : taxiSet.has(playerId)
+        ? "taxi"
+        : "active";
     entries.push({
       playerExternalId: playerId,
       playerName: player?.full_name ?? `Player ${playerId}`,
       position: player?.position ?? "UNK",
       nflTeam: player?.team ?? null,
-      slot: "BN",
+      slot: rosterStatus === "ir" ? "IR" : rosterStatus === "taxi" ? "TAXI" : "BN",
+      rosterStatus,
       injuryStatus: player?.injury_status ?? null,
     });
   }
@@ -255,16 +324,35 @@ export async function getSleeperTrendingAdds(
   );
 }
 
+export type SleeperWeeklyStatRow = SleeperStatBlob & {
+  player_id: number | string;
+  pts_ppr?: number;
+  pts_half_ppr?: number;
+  pts_std?: number;
+};
+
 export async function getSleeperWeeklyStats(season: number, week: number) {
-  return sleeperFetch<
-    Array<{
-      player_id: number | string;
-      pts_ppr?: number;
-      pts_half_ppr?: number;
-      pts_std?: number;
-    }>
-  >(`/stats/nfl/regular/${season}/${week}`);
+  return sleeperFetch<SleeperWeeklyStatRow[]>(
+    `/stats/nfl/regular/${season}/${week}`
+  );
 }
+
+export type SleeperProjectionRow = {
+  player_id?: string;
+  player?: {
+    full_name?: string;
+    first_name?: string;
+    last_name?: string;
+    position?: string;
+    team?: string;
+    injury_status?: string;
+  };
+  stats?: SleeperStatBlob & {
+    pts_ppr?: number;
+    pts_half_ppr?: number;
+    pts_std?: number;
+  };
+};
 
 export async function getSleeperProjections(season: number, week: number) {
   const params = new URLSearchParams({ season_type: "regular" });
@@ -272,7 +360,9 @@ export async function getSleeperProjections(season: number, week: number) {
     params.append("position[]", position);
   }
 
-  return sleeperFetch<unknown[]>(`/projections/nfl/${season}/${week}?${params}`);
+  return sleeperFetch<SleeperProjectionRow[]>(
+    `/projections/nfl/${season}/${week}?${params}`
+  );
 }
 
 export function resolvePlayers(
