@@ -7,6 +7,8 @@ export type LeagueChatContext = {
   week: number;
   record: string;
   teamName?: string;
+  externalLeagueId?: string;
+  season?: number;
 };
 
 export function buildLeagueChatContext(
@@ -27,6 +29,8 @@ export function buildLeagueChatContext(
     week: league.week,
     record: league.record,
     teamName: league.teamName,
+    externalLeagueId: league.externalLeagueId,
+    season: league.season,
   };
 }
 
@@ -39,5 +43,6 @@ export function demoLeagueChatContext(): LeagueChatContext {
     week: 5,
     record: "3-1",
     teamName: "Billy's Bandits",
+    season: new Date().getFullYear(),
   };
 }

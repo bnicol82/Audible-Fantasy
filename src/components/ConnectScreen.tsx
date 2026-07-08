@@ -12,8 +12,10 @@ type ConnectResult = {
 
 export function ConnectScreen({
   onConnect,
+  onSkipDemo,
 }: {
   onConnect: (result: ConnectResult) => void;
+  onSkipDemo: () => void;
 }) {
   const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(false);
@@ -44,7 +46,9 @@ export function ConnectScreen({
       }
 
       if (!data.leagues?.length) {
-        setError("No NFL leagues found for this username this season.");
+        setError(
+          "No NFL leagues found for this username in the current or previous season. Set up your league on Sleeper first, or explore with demo data below."
+        );
         return;
       }
 
@@ -125,6 +129,10 @@ export function ConnectScreen({
           >
             {loading ? "Finding leagues…" : "Connect Sleeper"}{" "}
             <span className="tag">~10 SEC</span>
+          </button>
+          <button type="button" className="btn" onClick={onSkipDemo}>
+            Explore with demo data
+            <span className="tag">NO LEAGUE NEEDED</span>
           </button>
         </>
       ) : (

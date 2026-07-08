@@ -15,6 +15,8 @@ import { STORAGE_KEYS, type NflTeam } from "@/lib/nfl-teams";
 import {
   clearStoredLeague,
   getStoredLeagueId,
+  isDemoMode,
+  setDemoMode,
   setStoredLeague,
 } from "@/lib/session";
 import { useTheme } from "@/lib/theme/ThemeProvider";
@@ -40,9 +42,11 @@ export default function Home() {
 
     if (LEAGUE_IMPORT_ENABLED) {
       const storedLeagueId = getStoredLeagueId();
-      const isConnected = localStorage.getItem(STORAGE_KEYS.connected) === "true";
+      const demo = isDemoMode();
+      const isConnected =
+        demo || (localStorage.getItem(STORAGE_KEYS.connected) === "true" && Boolean(storedLeagueId));
       setLeagueId(storedLeagueId);
-      setConnected(isConnected && Boolean(storedLeagueId));
+      setConnected(isConnected);
     } else {
       setConnected(wasOnboarded);
     }
@@ -58,9 +62,22 @@ export default function Home() {
     setView("team");
   };
 
-  const handleConnect = ({ leagueId: nextLeagueId, username }: { leagueId: string; username: string }) => {
+  const handleConnect = ({
+    leagueId: nextLeagueId,
+    username,
+  }: {
+    leagueId: string;
+    username: string;
+  }) => {
     setStoredLeague(nextLeagueId, username);
     setLeagueId(nextLeagueId);
+    setConnected(true);
+    setView("team");
+  };
+
+  const handleSkipDemo = () => {
+    setDemoMode();
+    setLeagueId(null);
     setConnected(true);
     setView("team");
   };
@@ -95,7 +112,9 @@ export default function Home() {
     }
 
     if (LEAGUE_IMPORT_ENABLED && !connected) {
-      return <ConnectScreen onConnect={handleConnect} />;
+      return (
+        <ConnectScreen onConnect={handleConnect} onSkipDemo={handleSkipDemo} />
+      );
     }
 
     switch (view) {
@@ -114,9 +133,14 @@ export default function Home() {
       case "ask":
         return <AskScreen leagueId={leagueId} />;
       case "waivers":
-        return <WaiversScreen />;
+        return <WaiversScreen leagueId={leagueId} />;
       case "startsit":
-        return <StartSitScreen onAskWhy={() => setView("ask")} />;
+        return (
+          <StartSitScreen
+            leagueId={leagueId}
+            onAskWhy={() => setView("ask")}
+          />
+        );
       case "more":
         return (
           <MoreScreen

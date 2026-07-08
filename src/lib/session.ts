@@ -29,6 +29,19 @@ export function clearStoredLeague() {
   localStorage.removeItem(STORAGE_KEYS.leagueId);
   localStorage.removeItem(STORAGE_KEYS.sleeperUsername);
   localStorage.removeItem(STORAGE_KEYS.connected);
+  localStorage.removeItem(STORAGE_KEYS.demoMode);
+}
+
+export function setDemoMode() {
+  localStorage.setItem(STORAGE_KEYS.demoMode, "true");
+  localStorage.setItem(STORAGE_KEYS.connected, "true");
+  localStorage.removeItem(STORAGE_KEYS.leagueId);
+  localStorage.removeItem(STORAGE_KEYS.sleeperUsername);
+}
+
+export function isDemoMode() {
+  if (typeof window === "undefined") return false;
+  return localStorage.getItem(STORAGE_KEYS.demoMode) === "true";
 }
 
 export function getStoredSleeperUsername(): string | null {
