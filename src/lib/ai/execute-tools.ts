@@ -7,6 +7,10 @@ import {
   getSleeperWeeklyStats,
   resolvePlayers,
 } from "@/lib/providers/sleeper";
+import {
+  getProjectionsBySleeperIds,
+  normalizeScoringFormat,
+} from "@/lib/cache/players";
 import type { ToolContext } from "./tool-context";
 import { demoToolContext } from "./tool-context";
 
@@ -70,11 +74,38 @@ async function getPlayerDetails(input: ToolInput, context: ToolContext) {
   };
 }
 
+async function loadCachedProjections(
+  sleeperIds: string[],
+  context: ToolContext,
+  week: number
+) {
+  if (!process.env.DATABASE_URL || !sleeperIds.length) {
+    return new Map<string, number>();
+  }
+
+  try {
+    const rows = await getProjectionsBySleeperIds({
+      sleeperIds,
+      season: context.season,
+      week,
+      scoringFormat: context.scoringFormat,
+    });
+    return new Map(
+      rows.map((row) => [row.sleeperId, row.projectedPoints] as const)
+    );
+  } catch {
+    return new Map<string, number>();
+  }
+}
+
 async function comparePlayers(input: ToolInput, context: ToolContext) {
   const ids = asStringArray(input.player_ids);
   const week = asNumber(input.week, context.week);
   const players = await getSleeperPlayers();
   const resolved = resolvePlayers(players, ids);
+  const sleeperIds = resolved
+    .map((player) => player.player_id ?? "")
+    .filter(Boolean);
 
   let weeklyStats: Record<string, number> = {};
   try {
@@ -86,12 +117,15 @@ async function comparePlayers(input: ToolInput, context: ToolContext) {
     // Stats may be unavailable in offseason
   }
 
+  const projections = await loadCachedProjections(sleeperIds, context, week);
+
   return {
     week,
     scoringFormat: context.scoringFormat,
     players: resolved.map((player) => ({
       ...formatPlayer(player),
       lastWeekPoints: weeklyStats[player.player_id ?? ""] ?? null,
+      projectedPoints: projections.get(player.player_id ?? "") ?? null,
     })),
   };
 }
@@ -169,15 +203,24 @@ async function getProjections(input: ToolInput, context: ToolContext) {
   const week = asNumber(input.week, context.week);
   const players = await getSleeperPlayers();
   const resolved = resolvePlayers(players, ids);
+  const sleeperIds = resolved
+    .map((player) => player.player_id ?? "")
+    .filter(Boolean);
+
+  const projections = await loadCachedProjections(sleeperIds, context, week);
+  const hasCache = projections.size > 0;
 
   return {
     week,
     season: context.season,
-    note: "Projection feed not cached yet — returning player metadata only.",
-    players: resolved.map((player) => formatPlayer(player)),
-    projections: resolved.map((player) => ({
-      playerId: player.player_id,
-      projectedPoints: null,
+    scoringFormat: context.scoringFormat,
+    source: hasCache ? "cache" : "unavailable",
+    note: hasCache
+      ? "Projections loaded from Neon cache (Sleeper feed)."
+      : "Projection cache empty — run POST /api/cache/sync to populate.",
+    players: resolved.map((player) => ({
+      ...formatPlayer(player),
+      projectedPoints: projections.get(player.player_id ?? "") ?? null,
     })),
   };
 }
@@ -217,13 +260,7 @@ export async function buildToolContextFromRequest(input: {
   const nflState = await getSleeperNflState().catch(() => null);
 
   const scoring = input.leagueContext?.scoringFormat?.toLowerCase() ?? "";
-  const scoringFormat = scoring.includes("half")
-    ? "half_ppr"
-    : scoring.includes("ppr")
-      ? "ppr"
-      : scoring.includes("standard")
-        ? "standard"
-        : "half_ppr";
+  const scoringFormat = normalizeScoringFormat(scoring);
 
   return {
     externalLeagueId: input.leagueContext?.externalLeagueId,

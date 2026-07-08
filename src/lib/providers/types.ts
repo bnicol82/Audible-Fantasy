@@ -39,6 +39,7 @@ export type NormalizedRosterEntry = {
   nflTeam: string | null;
   slot: string;
   injuryStatus?: string | null;
+  projectedPoints?: number | null;
 };
 
 export type NormalizedRoster = {

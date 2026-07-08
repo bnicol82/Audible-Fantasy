@@ -261,6 +261,15 @@ export async function getSleeperWeeklyStats(season: number, week: number) {
   >(`/stats/nfl/regular/${season}/${week}`);
 }
 
+export async function getSleeperProjections(season: number, week: number) {
+  const params = new URLSearchParams({ season_type: "regular" });
+  for (const position of ["QB", "RB", "WR", "TE", "K", "DEF"]) {
+    params.append("position[]", position);
+  }
+
+  return sleeperFetch<unknown[]>(`/projections/nfl/${season}/${week}?${params}`);
+}
+
 export function resolvePlayers(
   players: Record<string, SleeperPlayer>,
   identifiers: string[]
