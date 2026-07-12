@@ -8,7 +8,12 @@ import {
   type LeagueChatContext,
 } from "@/lib/leagues/context";
 import { streamChatResponse, type ChatMessage } from "@/lib/chat/stream";
-import { getOrCreateProfileId } from "@/lib/session";
+import {
+  clearStoredConversationId,
+  getOrCreateProfileId,
+  getStoredConversationId,
+  setStoredConversationId,
+} from "@/lib/session";
 import { AppHead, Hash } from "./ui";
 
 const IN_SEASON_SUGGESTIONS = [
@@ -28,9 +33,11 @@ const DRAFT_SUGGESTIONS = [
 export function AskScreen({
   leagueId,
   appPhase = "in_season",
+  initialMessage,
 }: {
   leagueId: string | null;
   appPhase?: AppPhase;
+  initialMessage?: string;
 }) {
   const isDraftMode = appPhase === "draft";
   const [context, setContext] = useState<LeagueChatContext>(
@@ -41,7 +48,9 @@ export function AskScreen({
   const [loading, setLoading] = useState(false);
   const [streaming, setStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const chatRef = useRef<HTMLDivElement>(null);
+  const initialMessageSent = useRef(false);
   const suggestions = isDraftMode ? DRAFT_SUGGESTIONS : IN_SEASON_SUGGESTIONS;
 
   useEffect(() => {
@@ -77,6 +86,37 @@ export function AskScreen({
     };
   }, [leagueId, appPhase]);
 
+  // Restore the stored conversation for this league (if any) so a reload doesn't wipe
+  // history — the server is the source of truth for messages now.
+  useEffect(() => {
+    let cancelled = false;
+    const storedId = getStoredConversationId(leagueId);
+    setConversationId(storedId);
+    setMessages([]);
+
+    if (!storedId) return;
+
+    async function loadHistory() {
+      try {
+        const profileId = getOrCreateProfileId();
+        const res = await fetch(
+          `/api/chat/history?conversationId=${encodeURIComponent(storedId!)}&profileId=${encodeURIComponent(profileId)}`
+        );
+        const json = await res.json();
+        if (!cancelled && res.ok && Array.isArray(json.messages) && json.messages.length) {
+          setMessages(json.messages);
+        }
+      } catch {
+        // History is a nice-to-have; keep the empty state on failure.
+      }
+    }
+
+    loadHistory();
+    return () => {
+      cancelled = true;
+    };
+  }, [leagueId]);
+
   useEffect(() => {
     chatRef.current?.scrollTo({
       top: chatRef.current.scrollHeight,
@@ -108,14 +148,28 @@ export function AskScreen({
           leagueContext: { ...context, phase: appPhase },
           profileId,
           leagueId,
+          conversationId,
         }),
       });
+
+      const returnedId = res.headers.get("X-Audible-Conversation-Id");
+      if (returnedId) {
+        setConversationId(returnedId);
+        setStoredConversationId(leagueId, returnedId);
+      }
 
       setLoading(false);
       setStreaming(true);
       setMessages((current) => [...current, { role: "assistant", content: "" }]);
 
-      for await (const chunk of streamChatResponse(res)) {
+      for await (const chunk of streamChatResponse(res, {
+        onMeta: (meta) => {
+          if (meta.conversationId) {
+            setConversationId(meta.conversationId);
+            setStoredConversationId(leagueId, meta.conversationId);
+          }
+        },
+      })) {
         setMessages((current) => {
           const updated = [...current];
           const last = updated[updated.length - 1];
@@ -142,6 +196,23 @@ export function AskScreen({
     }
   }
 
+  // Auto-send a prefilled question (e.g. from the Start/Sit "ASK AUDIBLE WHY" button),
+  // once, after league context has had a chance to load.
+  useEffect(() => {
+    if (!initialMessage || initialMessageSent.current || loading || streaming) return;
+    initialMessageSent.current = true;
+    sendMessage(initialMessage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialMessage, context]);
+
+  function startNewConversation() {
+    if (loading || streaming) return;
+    clearStoredConversationId(leagueId);
+    setConversationId(null);
+    setMessages([]);
+    setError(null);
+  }
+
   return (
     <div className="body">
       <AppHead
@@ -151,6 +222,28 @@ export function AskScreen({
       <Hash>
         {context.leagueName} · {context.scoringFormat}
         {isDraftMode ? " · DRAFT" : ""}
+        {messages.length > 0 && (
+          <>
+            {" · "}
+            <button
+              type="button"
+              className="linklike"
+              onClick={startNewConversation}
+              disabled={loading || streaming}
+              style={{
+                background: "none",
+                border: "none",
+                padding: 0,
+                font: "inherit",
+                color: "inherit",
+                textDecoration: "underline",
+                cursor: "pointer",
+              }}
+            >
+              NEW CHAT
+            </button>
+          </>
+        )}
       </Hash>
 
       <div className="chat-area" ref={chatRef}>

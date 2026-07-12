@@ -68,3 +68,22 @@ export function getStoredSleeperUsername(): string | null {
   if (typeof window === "undefined") return null;
   return localStorage.getItem(STORAGE_KEYS.sleeperUsername);
 }
+
+// Conversation ids are scoped per league so switching leagues starts a fresh thread
+// while the old one stays resumable.
+function conversationStorageKey(leagueId: string | null) {
+  return `audible-conversation-${leagueId ?? "demo"}`;
+}
+
+export function getStoredConversationId(leagueId: string | null): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(conversationStorageKey(leagueId));
+}
+
+export function setStoredConversationId(leagueId: string | null, conversationId: string) {
+  localStorage.setItem(conversationStorageKey(leagueId), conversationId);
+}
+
+export function clearStoredConversationId(leagueId: string | null) {
+  localStorage.removeItem(conversationStorageKey(leagueId));
+}

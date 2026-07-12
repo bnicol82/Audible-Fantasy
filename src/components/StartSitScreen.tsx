@@ -1,17 +1,29 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { startSitComparison } from "@/lib/data";
 import type { StartSitPayload } from "@/lib/fantasy/start-sit";
 import { getOrCreateProfileId } from "@/lib/session";
 import { AppHead, Card, Hash } from "./ui";
+
+function formatGeneratedAt(iso?: string) {
+  if (!iso) return null;
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
 
 export function StartSitScreen({
   leagueId,
   onAskWhy,
 }: {
   leagueId: string | null;
-  onAskWhy: () => void;
+  onAskWhy: (question?: string) => void;
 }) {
   const [comparison, setComparison] = useState<StartSitPayload>({
     ...startSitComparison,
@@ -19,45 +31,58 @@ export function StartSitScreen({
     week: 5,
   });
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      setLoading(true);
+  const load = useCallback(
+    async (refresh: boolean) => {
+      if (refresh) setRefreshing(true);
+      else setLoading(true);
       try {
         const profileId = getOrCreateProfileId();
-        const params = new URLSearchParams({ profileId });
-        if (leagueId) params.set("leagueId", leagueId);
-
-        const res = await fetch(`/api/fantasy/start-sit?${params.toString()}`);
-        const json = await res.json();
-        if (!cancelled && res.ok && json.comparison) {
-          setComparison(json.comparison);
+        if (refresh) {
+          const res = await fetch("/api/fantasy/start-sit", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ profileId, leagueId: leagueId ?? undefined }),
+          });
+          const json = await res.json();
+          if (res.ok && json.comparison) setComparison(json.comparison);
+        } else {
+          const params = new URLSearchParams({ profileId });
+          if (leagueId) params.set("leagueId", leagueId);
+          const res = await fetch(`/api/fantasy/start-sit?${params.toString()}`);
+          const json = await res.json();
+          if (res.ok && json.comparison) setComparison(json.comparison);
         }
       } catch {
-        // Keep demo comparison
+        // Keep current comparison
       } finally {
-        if (!cancelled) setLoading(false);
+        setLoading(false);
+        setRefreshing(false);
       }
-    }
+    },
+    [leagueId]
+  );
 
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [leagueId]);
+  useEffect(() => {
+    load(false);
+  }, [load]);
 
   const { playerA, playerB, stats, verdict } = comparison;
+  const isAi = comparison.source === "ai" || comparison.source === "ai-cached";
+  const generatedLabel = formatGeneratedAt(comparison.generatedAt);
 
   return (
     <div className="body">
       <AppHead title="Start / Sit" badge={`FLEX · WK ${comparison.week}`} />
       <Hash>
-        DECISION 1 OF 1{comparison.source === "demo" ? " · DEMO" : ""}
+        DECISION 1 OF 1
+        {comparison.source === "demo" ? " · DEMO" : ""}
+        {isAi ? ` · AI ANALYSIS${generatedLabel ? ` · ${generatedLabel}` : ""}` : ""}
       </Hash>
 
       {loading && <p className="connect-error">Loading comparison…</p>}
+      {refreshing && <p className="connect-error">Generating fresh AI analysis…</p>}
 
       <Card>
         <div className="vs">
@@ -97,9 +122,43 @@ export function StartSitScreen({
         <b>⚑ {playerA.isWinner ? playerA.name.split(" ").pop() : playerB.name.split(" ").pop()}</b>
         <span>{verdict}</span>
       </div>
-      <button type="button" className="askwhy" onClick={onAskWhy}>
+
+      {isAi && comparison.reasoning && comparison.reasoning.length > 0 && (
+        <Card>
+          {comparison.reasoning.map((bullet) => (
+            <div key={bullet} className="cmprow">
+              <span className="lab" style={{ textAlign: "left", flex: 1 }}>
+                • {bullet}
+              </span>
+            </div>
+          ))}
+        </Card>
+      )}
+
+      <button
+        type="button"
+        className="askwhy"
+        onClick={() => {
+          const winner = playerA.isWinner ? playerA : playerB;
+          const loser = playerA.isWinner ? playerB : playerA;
+          onAskWhy(
+            `Why should I start ${winner.name} over ${loser.name} in week ${comparison.week}?`
+          );
+        }}
+      >
         ASK AUDIBLE WHY →
       </button>
+
+      {comparison.source !== "demo" && (
+        <button
+          type="button"
+          className="askwhy"
+          onClick={() => load(true)}
+          disabled={loading || refreshing}
+        >
+          {refreshing ? "REGENERATING…" : "REFRESH AI ANALYSIS ↻"}
+        </button>
+      )}
     </div>
   );
 }
