@@ -41,6 +41,7 @@ export default function Home() {
   const [isPro, setIsPro] = useState(false);
   const [view, setView] = useState<View>("team");
   const [hydrated, setHydrated] = useState(false);
+  const [askPrefill, setAskPrefill] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     const wasOnboarded = localStorage.getItem(STORAGE_KEYS.onboarded) === "true";
@@ -166,6 +167,8 @@ export default function Home() {
   };
 
   const handleTabChange = (tab: string) => {
+    // Direct tab navigation should never replay a stale Start/Sit prefill question.
+    setAskPrefill(undefined);
     setView(tab as Tab);
   };
 
@@ -218,7 +221,14 @@ export default function Home() {
           />
         );
       case "ask":
-        return <AskScreen leagueId={leagueId} appPhase={appPhase} />;
+        return (
+          <AskScreen
+            key={askPrefill ?? "ask"}
+            leagueId={leagueId}
+            appPhase={appPhase}
+            initialMessage={askPrefill}
+          />
+        );
       case "draft":
         return (
           <DraftScreen leagueId={leagueId} onAskDraft={() => setView("ask")} />
@@ -229,7 +239,10 @@ export default function Home() {
         return (
           <StartSitScreen
             leagueId={leagueId}
-            onAskWhy={() => setView("ask")}
+            onAskWhy={(question) => {
+              setAskPrefill(question);
+              setView("ask");
+            }}
           />
         );
       case "more":

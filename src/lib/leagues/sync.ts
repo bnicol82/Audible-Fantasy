@@ -1,9 +1,6 @@
 import { getDb } from "@/lib/db";
 import { phaseFromLeagueStatus, type AppPhase } from "@/lib/app-phase";
-import {
-  enrichRosterWithProjections,
-  normalizeScoringFormat,
-} from "@/lib/cache/players";
+import { enrichRosterWithProjections } from "@/lib/cache/players";
 import {
   getSleeperLeague,
   getSleeperLeagueUsers,
@@ -12,15 +9,23 @@ import {
   getSleeperPlayers,
   getSleeperRosters,
   getSleeperUser,
+  mapLeagueRules,
   normalizeUserRosterEntries,
 } from "@/lib/providers/sleeper";
-import type { LeagueMeta, NormalizedRosterEntry } from "@/lib/providers/types";
+import type {
+  LeagueMeta,
+  LeagueRules,
+  NormalizedRosterEntry,
+  ScoringSettings,
+} from "@/lib/providers/types";
 
 export type SyncedLeagueSummary = {
   leagueId: string;
   externalLeagueId: string;
   name: string;
   scoring: string;
+  scoringSettings: ScoringSettings;
+  rules: LeagueRules;
   season: number;
   week: number;
   record: string;
@@ -78,7 +83,7 @@ export async function syncSleeperLeague(input: {
       getSleeperPlayers(),
     ]);
 
-  const scoringSettings = {
+  const scoringSettings: ScoringSettings = {
     format:
       (league.scoring_settings.rec ?? 0) >= 1
         ? "ppr"
@@ -98,6 +103,8 @@ export async function syncSleeperLeague(input: {
     else acc.push({ slot, count: 1 });
     return acc;
   }, []);
+
+  const rules = mapLeagueRules(league.settings);
 
   await db`
     insert into profiles (id, display_name, sleeper_username, sleeper_user_id)
@@ -123,6 +130,7 @@ export async function syncSleeperLeague(input: {
       name,
       scoring_settings,
       roster_slots,
+      rules,
       season,
       synced_at
     )
@@ -134,6 +142,7 @@ export async function syncSleeperLeague(input: {
       ${league.name},
       ${JSON.stringify(scoringSettings)}::jsonb,
       ${JSON.stringify(rosterSlots)}::jsonb,
+      ${JSON.stringify(rules)}::jsonb,
       ${Number(league.season)},
       now()
     )
@@ -141,6 +150,7 @@ export async function syncSleeperLeague(input: {
       name = excluded.name,
       scoring_settings = excluded.scoring_settings,
       roster_slots = excluded.roster_slots,
+      rules = excluded.rules,
       season = excluded.season,
       synced_at = now()
     returning id
@@ -233,6 +243,8 @@ export async function syncSleeperLeague(input: {
     externalLeagueId: input.externalLeagueId,
     name: league.name,
     scoring: formatScoring(scoringSettings.format),
+    scoringSettings,
+    rules,
     season: Number(league.season),
     week,
     record: `${userNormalized.wins}–${userNormalized.losses}`,
@@ -268,7 +280,7 @@ export async function getActiveLeague(profileId: string, leagueId: string) {
     id: string;
     external_league_id: string;
     name: string;
-    scoring_settings: { format?: string };
+    scoring_settings: ScoringSettings;
     season: number;
     sleeper_user_id: string;
     sleeper_username: string;
@@ -351,11 +363,18 @@ export async function getActiveLeague(profileId: string, leagueId: string) {
     };
   }
 
+  const scoringSettings: ScoringSettings = league.scoring_settings?.format
+    ? league.scoring_settings
+    : { format: "half_ppr", raw: {} };
+  const rules = mapLeagueRules(liveLeague.settings);
+
   return {
     leagueId: league.id,
     externalLeagueId: league.external_league_id,
     name: league.name,
-    scoring: formatScoring(league.scoring_settings?.format ?? "standard"),
+    scoring: formatScoring(scoringSettings.format),
+    scoringSettings,
+    rules,
     season: league.season,
     week,
     record: `${wins}–${losses}`,
@@ -369,9 +388,7 @@ export async function getActiveLeague(profileId: string, leagueId: string) {
       roster: rosterRow.entries,
       season: league.season,
       week,
-      scoringFormat: normalizeScoringFormat(
-        formatScoring(league.scoring_settings?.format ?? "standard")
-      ),
+      scoringSettings,
     }),
     matchup,
   } satisfies SyncedLeagueSummary;

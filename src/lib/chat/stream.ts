@@ -3,7 +3,19 @@ export type ChatMessage = {
   content: string;
 };
 
-export async function* streamChatResponse(response: Response) {
+export type ChatStreamMeta = {
+  toolsUsed?: string[];
+  conversationId?: string | null;
+};
+
+export type ChatStreamHandlers = {
+  onMeta?: (meta: ChatStreamMeta) => void;
+};
+
+export async function* streamChatResponse(
+  response: Response,
+  handlers?: ChatStreamHandlers
+) {
   if (!response.ok) {
     const errorBody = await response.text();
     let message = "Chat request failed";
@@ -50,7 +62,23 @@ export async function* streamChatResponse(response: Response) {
         const parsed = JSON.parse(data) as {
           type?: string;
           delta?: { type?: string; text?: string };
+          error?: string;
+          toolsUsed?: string[];
+          conversationId?: string | null;
         };
+
+        if (eventType === "audible_meta") {
+          handlers?.onMeta?.({
+            toolsUsed: parsed.toolsUsed,
+            conversationId: parsed.conversationId,
+          });
+          continue;
+        }
+
+        if (eventType === "audible_error") {
+          // Mid-stream failure: partial text already rendered stays; surface the error.
+          throw new Error(parsed.error ?? "Chat failed mid-response");
+        }
 
         if (
           eventType === "content_block_delta" ||
@@ -59,8 +87,12 @@ export async function* streamChatResponse(response: Response) {
           const text = parsed.delta?.text;
           if (text) yield text;
         }
-      } catch {
-        // Ignore malformed SSE chunks
+      } catch (error) {
+        if (error instanceof SyntaxError) {
+          // Ignore malformed SSE chunks
+          continue;
+        }
+        throw error;
       }
     }
   }

@@ -12,6 +12,16 @@ export type ProviderCredentials =
       playerIds: string[];
     };
 
+export type LeagueRules = {
+  waiverType: "rolling" | "faab" | "reverse_standings";
+  faabBudget: number | null;
+  taxiSlots: number;
+  irSlots: number;
+  playoffWeekStart: number | null;
+  playoffTeams: number | null;
+  tradeDeadlineWeek: number | null;
+};
+
 export type LeagueMeta = {
   externalLeagueId: string;
   name: string;
@@ -22,6 +32,7 @@ export type LeagueMeta = {
   draftId?: string;
   scoringSettings: ScoringSettings;
   rosterSlots: RosterSlot[];
+  rules?: LeagueRules;
 };
 
 export type ScoringSettings = {
@@ -34,12 +45,15 @@ export type RosterSlot = {
   count: number;
 };
 
+export type RosterStatus = "active" | "ir" | "taxi";
+
 export type NormalizedRosterEntry = {
   playerExternalId: string;
   playerName: string;
   position: string;
   nflTeam: string | null;
   slot: string;
+  rosterStatus: RosterStatus;
   injuryStatus?: string | null;
   projectedPoints?: number | null;
 };
