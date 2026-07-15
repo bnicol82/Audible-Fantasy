@@ -43,15 +43,42 @@ export function MyTeamScreen({
   isDraftMode = false,
   onStartSit,
   onOpenDraft,
+  onOpenAlerts,
 }: {
   leagueId: string | null;
   isDraftMode?: boolean;
   onStartSit: () => void;
   onOpenDraft?: () => void;
+  onOpenAlerts?: () => void;
 }) {
   const [data, setData] = useState<SyncedLeagueSummary | null>(null);
   const [loading, setLoading] = useState(Boolean(leagueId));
   const [error, setError] = useState<string | null>(null);
+  const [newAlertCount, setNewAlertCount] = useState(0);
+
+  useEffect(() => {
+    if (!leagueId) return;
+    let cancelled = false;
+
+    async function loadAlertCount() {
+      try {
+        const profileId = getOrCreateProfileId();
+        const params = new URLSearchParams({ profileId, leagueId: leagueId! });
+        const res = await fetch(`/api/insights?${params.toString()}`);
+        const json = await res.json();
+        if (!cancelled && res.ok && typeof json.newCount === "number") {
+          setNewAlertCount(json.newCount);
+        }
+      } catch {
+        // Alert badge is a nice-to-have
+      }
+    }
+
+    loadAlertCount();
+    return () => {
+      cancelled = true;
+    };
+  }, [leagueId]);
 
   useEffect(() => {
     if (!leagueId) {
@@ -157,6 +184,16 @@ export function MyTeamScreen({
 
       {loading && <p className="connect-error">Loading your roster…</p>}
       {error && <p className="connect-error">{error}</p>}
+
+      {leagueId && onOpenAlerts && !isDraftMode && (
+        <button type="button" className="lineup-cta" onClick={onOpenAlerts}>
+          <Pill variant={newAlertCount > 0 ? "red" : undefined}>
+            {newAlertCount > 0
+              ? `🔔 ${newAlertCount} NEW ALERT${newAlertCount === 1 ? "" : "S"} — TAP TO VIEW`
+              : "🔔 ALERTS — AUDIBLE IS WATCHING YOUR ROSTER"}
+          </Pill>
+        </button>
+      )}
 
       {league.matchup && (
         <Card>

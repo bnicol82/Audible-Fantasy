@@ -15,6 +15,10 @@
     {
       "path": "/api/cache/sync-conditions",
       "schedule": "0 12,18 * * 4,5,6,0"
+    },
+    {
+      "path": "/api/cache/sync-insights",
+      "schedule": "0 10 * * *"
     }
   ]
 }
