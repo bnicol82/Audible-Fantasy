@@ -86,6 +86,7 @@ export function WaiversScreen({ leagueId }: { leagueId: string | null }) {
 
       {loading && <p className="connect-error">Loading waiver targets…</p>}
       {refreshing && <p className="connect-error">Generating fresh AI targets…</p>}
+      {!loading && board.error && <p className="connect-error">{board.error}</p>}
 
       {isAi && board.strategy && (
         <div className="deadline">
