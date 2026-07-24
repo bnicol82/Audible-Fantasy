@@ -83,6 +83,9 @@ export function StartSitScreen({
 
       {loading && <p className="connect-error">Loading comparison…</p>}
       {refreshing && <p className="connect-error">Generating fresh AI analysis…</p>}
+      {!loading && comparison.error && (
+        <p className="connect-error">{comparison.error}</p>
+      )}
 
       <Card>
         <div className="vs">

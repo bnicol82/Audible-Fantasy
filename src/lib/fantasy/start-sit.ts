@@ -14,10 +14,13 @@ export type StartSitPayload = typeof startSitComparison & {
   generatedAt?: string;
   reasoning?: string[];
   confidence?: "high" | "medium" | "low";
+  // Diagnostic surface: set when a league IS connected but couldn't be turned into a
+  // real comparison, so the UI shows why instead of silently pretending it's demo mode.
+  error?: string;
 };
 
-function demoPayload(): StartSitPayload {
-  return { ...startSitComparison, source: "demo", week: 5 };
+function demoPayload(error?: string): StartSitPayload {
+  return { ...startSitComparison, source: "demo", week: 5, error };
 }
 
 export function pickFlexDecision(
@@ -230,7 +233,11 @@ export async function getStartSitComparison(input: {
 
   try {
     const league = await getActiveLeague(input.profileId, input.leagueId);
-    if (!league) return demoPayload();
+    if (!league) {
+      return demoPayload(
+        "Your league couldn't be loaded (not found or not synced yet). Showing sample data — try reconnecting your league."
+      );
+    }
 
     // Pre-draft there's no lineup to set — keep this screen heuristic and cheap.
     if (league.phase !== "draft" && process.env.ANTHROPIC_API_KEY) {
@@ -249,7 +256,13 @@ export async function getStartSitComparison(input: {
     }
 
     const facts = await buildStartSitFacts(league);
-    if (!facts) return demoPayload();
+    if (!facts) {
+      // League loaded fine — there just isn't a flex swap to weigh (e.g. offseason,
+      // or no eligible bench players). Not an error; say so plainly.
+      return demoPayload(
+        `Loaded ${league.name}, but there's no flex start/sit decision to make right now (offseason or no eligible bench players).`
+      );
+    }
 
     const { winner, verdict } = heuristicDecision(facts);
     return buildStartSitPayload({
@@ -259,8 +272,10 @@ export async function getStartSitComparison(input: {
       verdict,
       source: "live",
     });
-  } catch {
-    return demoPayload();
+  } catch (error) {
+    return demoPayload(
+      error instanceof Error ? error.message : "Failed to load start/sit."
+    );
   }
 }
 

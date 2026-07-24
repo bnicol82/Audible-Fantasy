@@ -180,7 +180,7 @@ export default function Home() {
         ? "more"
         : (view as Tab);
 
-  const showTabBar = onboarded && connected && view !== "paywall" && view !== "settings";
+  const showTabBar = onboarded && connected && view !== "paywall";
   const isDraftMode = appPhase === "draft";
 
   function renderScreen() {

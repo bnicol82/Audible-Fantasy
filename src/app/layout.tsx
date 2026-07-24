@@ -5,11 +5,13 @@ import "./globals.css";
 
 // maximumScale: 1 stops iOS Safari's automatic zoom-in when focusing form inputs.
 // User-initiated pinch zoom still works — iOS ignores the cap for accessibility.
+// Deliberately NOT setting viewportFit: "cover": that turns env(safe-area-inset-bottom)
+// non-zero, and the tab bar already pads with max(18px, that inset) — cover pushed the
+// menu up by the home-indicator height. Leaving it default keeps the original spacing.
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
-  viewportFit: "cover",
 };
 
 const barlow = Barlow({

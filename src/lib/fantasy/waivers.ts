@@ -13,14 +13,18 @@ export type WaiversPayload = {
   targets: WaiverTarget[];
   generatedAt?: string;
   strategy?: string;
+  // Diagnostic surface: set when loading real data failed, so the UI explains why
+  // instead of silently showing demo targets.
+  error?: string;
 };
 
-function demoPayload(): WaiversPayload {
+function demoPayload(error?: string): WaiversPayload {
   return {
     source: "demo",
     faabRemaining: league.faabRemaining,
     claimsSet: league.claimsSet,
     targets: waiverTargets,
+    error,
   };
 }
 
@@ -143,7 +147,9 @@ export async function getWaiversBoard(input: {
     const targets = heuristicTargets(facts);
 
     if (!targets.length) {
-      return demoPayload();
+      return demoPayload(
+        "No waiver targets available right now (Sleeper's trending list came back empty). Showing sample data."
+      );
     }
 
     return {
@@ -152,7 +158,9 @@ export async function getWaiversBoard(input: {
       claimsSet: league.claimsSet,
       targets,
     };
-  } catch {
-    return demoPayload();
+  } catch (error) {
+    return demoPayload(
+      error instanceof Error ? error.message : "Failed to load waivers."
+    );
   }
 }
