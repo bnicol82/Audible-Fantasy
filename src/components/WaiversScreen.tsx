@@ -21,6 +21,7 @@ function formatGeneratedAt(iso?: string) {
 export function WaiversScreen({ leagueId }: { leagueId: string | null }) {
   const [board, setBoard] = useState<WaiversPayload>({
     source: "demo",
+    waiverType: "faab",
     faabRemaining: league.faabRemaining,
     claimsSet: league.claimsSet,
     targets: waiverTargets,
@@ -64,13 +65,20 @@ export function WaiversScreen({ leagueId }: { leagueId: string | null }) {
   }, [load]);
 
   const isAi = board.source === "ai" || board.source === "ai-cached";
+  const isFaab = board.waiverType === "faab";
   const generatedLabel = formatGeneratedAt(board.generatedAt);
 
   return (
     <div className="body">
       <AppHead
         title="Waivers"
-        badge={`FAAB $${board.faabRemaining} LEFT`}
+        badge={
+          isFaab
+            ? `FAAB $${board.faabRemaining} LEFT`
+            : board.waiverType === "reverse_standings"
+              ? "REVERSE STANDINGS"
+              : "WAIVER PRIORITY"
+        }
       />
       <Hash>
         {isAi
@@ -81,7 +89,8 @@ export function WaiversScreen({ leagueId }: { leagueId: string | null }) {
       </Hash>
       <div className="deadline">
         <i />
-        WAIVERS CLEAR WED 3:00 AM · {board.claimsSet} CLAIMS SET
+        WAIVERS CLEAR WED 3:00 AM
+        {isFaab ? ` · ${board.claimsSet} CLAIMS SET` : ""}
       </div>
 
       {loading && <p className="connect-error">Loading waiver targets…</p>}
@@ -104,10 +113,12 @@ export function WaiversScreen({ leagueId }: { leagueId: string | null }) {
                 {target.position} · {target.team} · {target.rostered} ROSTERED
               </div>
             </div>
-            <div className="faab">
-              BID ${target.suggestedBid}
-              <small>SUGGESTED</small>
-            </div>
+            {isFaab && (
+              <div className="faab">
+                BID ${target.suggestedBid}
+                <small>SUGGESTED</small>
+              </div>
+            )}
           </div>
           <div className="why">{target.why}</div>
           <div className="foot">

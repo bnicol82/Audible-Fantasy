@@ -81,12 +81,12 @@ export default function Home() {
         );
         const json = await res.json();
         if (!cancelled && res.ok && json.league?.phase) {
-          const stored = getStoredAppPhase();
-          const nextPhase = stored ?? json.league.phase;
+          // The live league status from Sleeper is authoritative — a pre-draft league
+          // must land in draft mode. (Previously a stale stored value always won, which
+          // stranded pre-draft leagues on the in-season screens.)
+          const nextPhase = json.league.phase as AppPhase;
           setAppPhase(nextPhase);
-          if (!stored) {
-            setStoredAppPhase(nextPhase);
-          }
+          setStoredAppPhase(nextPhase);
         }
       } catch {
         // Keep current phase

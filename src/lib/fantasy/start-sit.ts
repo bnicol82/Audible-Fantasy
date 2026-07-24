@@ -8,8 +8,16 @@ import {
 } from "@/lib/providers/sleeper";
 import { computeFantasyPointsWithFallback, toRawStatLine } from "@/lib/scoring/engine";
 
+export type RosterOutlookEntry = {
+  slot: string;
+  name: string;
+  position: string;
+  team: string;
+  points: number | null;
+};
+
 export type StartSitPayload = typeof startSitComparison & {
-  source: "live" | "demo" | "ai" | "ai-cached";
+  source: "live" | "demo" | "ai" | "ai-cached" | "offseason";
   week: number;
   generatedAt?: string;
   reasoning?: string[];
@@ -17,10 +25,39 @@ export type StartSitPayload = typeof startSitComparison & {
   // Diagnostic surface: set when a league IS connected but couldn't be turned into a
   // real comparison, so the UI shows why instead of silently pretending it's demo mode.
   error?: string;
+  // Offseason / no-lineup state: the user's REAL roster to show instead of demo players
+  // when there's no start/sit decision to make yet.
+  rosterOutlook?: RosterOutlookEntry[];
+  leagueName?: string;
 };
 
 function demoPayload(error?: string): StartSitPayload {
   return { ...startSitComparison, source: "demo", week: 5, error };
+}
+
+// When a real league is loaded but there's no lineup decision (offseason — Sleeper clears
+// starters between seasons — or no eligible bench players), show the user's actual roster
+// ranked by projected points instead of demo players.
+function offseasonOutlook(league: SyncedLeagueSummary, note: string): StartSitPayload {
+  const rosterOutlook: RosterOutlookEntry[] = league.roster
+    .filter((entry) => entry.rosterStatus !== "ir" && entry.rosterStatus !== "taxi")
+    .map((entry) => ({
+      slot: entry.slot,
+      name: entry.playerName,
+      position: entry.position,
+      team: entry.nflTeam ?? "—",
+      points: entry.projectedPoints ?? null,
+    }))
+    .sort((a, b) => (b.points ?? -1) - (a.points ?? -1));
+
+  return {
+    ...startSitComparison,
+    source: "offseason",
+    week: league.week,
+    error: note,
+    rosterOutlook,
+    leagueName: league.name,
+  };
 }
 
 export function pickFlexDecision(
@@ -257,11 +294,13 @@ export async function getStartSitComparison(input: {
 
     const facts = await buildStartSitFacts(league);
     if (!facts) {
-      // League loaded fine — there just isn't a flex swap to weigh (e.g. offseason,
-      // or no eligible bench players). Not an error; say so plainly.
-      return demoPayload(
-        `Loaded ${league.name}, but there's no flex start/sit decision to make right now (offseason or no eligible bench players).`
-      );
+      // League loaded fine — there just isn't a flex swap to weigh. Show the user's REAL
+      // roster (or a pre-draft prompt) instead of demo players.
+      const rosterEmpty = league.roster.length === 0;
+      const note = rosterEmpty
+        ? `${league.name} hasn't drafted yet — no roster to set. Head to the Draft tab and Ask AI to prep your picks.`
+        : `${league.name} is between lineups right now (offseason). Lineup decisions light up once the season starts — here's your current roster.`;
+      return offseasonOutlook(league, note);
     }
 
     const { winner, verdict } = heuristicDecision(facts);

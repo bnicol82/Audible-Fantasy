@@ -475,6 +475,7 @@ export async function getOrGenerateWaivers(input: {
   const generatedAt = new Date().toISOString();
   const payload: WaiversPayload = {
     source: "ai",
+    waiverType: league.rules.waiverType,
     faabRemaining: facts.faabRemaining,
     claimsSet: 0,
     targets,
