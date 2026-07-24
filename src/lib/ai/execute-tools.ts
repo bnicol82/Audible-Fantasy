@@ -1,10 +1,12 @@
 import {
+  getSleeperLeague,
   getSleeperMatchups,
   getSleeperNflState,
   getSleeperPlayers,
   getSleeperRosters,
   getSleeperTrendingAdds,
   getSleeperWeeklyStats,
+  mapLeagueRules,
   resolvePlayers,
 } from "@/lib/providers/sleeper";
 import { getProjectionsBySleeperIds, normalizeScoringFormat } from "@/lib/cache/players";
@@ -86,6 +88,8 @@ export async function executeTool(
       return getExpertConsensus(input, context);
     case "get_advanced_stats":
       return getAdvancedStats(input, context);
+    case "get_league_settings":
+      return getLeagueSettings(context);
     case "get_draft_board":
       return getDraftBoardTool(context);
     case "get_available_players":
@@ -358,6 +362,39 @@ async function getAdvancedStats(input: ToolInput, context: ToolContext) {
       ...(advanced.get(player.player_id ?? "") ?? {}),
     })),
     note: "Target share / air yards share from nflverse's weekly advanced stats release.",
+  };
+}
+
+async function getLeagueSettings(context: ToolContext) {
+  if (!context.externalLeagueId) {
+    return {
+      source: "demo",
+      note: "No real league is connected — these are demo/default settings. Tell the user to connect their Sleeper league in the app to get their actual league configuration.",
+      scoringFormat: context.scoringFormat,
+      scoringRules: context.scoringSettings.raw,
+      leagueRules: context.leagueRules ?? null,
+    };
+  }
+
+  const league = await getSleeperLeague(context.externalLeagueId);
+  const rosterSlots = league.roster_positions.reduce<Record<string, number>>(
+    (acc, slot) => {
+      acc[slot] = (acc[slot] ?? 0) + 1;
+      return acc;
+    },
+    {}
+  );
+
+  return {
+    source: "sleeper",
+    name: league.name,
+    season: league.season,
+    totalTeams: league.total_rosters,
+    scoringFormat: context.scoringFormat,
+    scoringRules: league.scoring_settings,
+    rosterSlots,
+    leagueRules: context.leagueRules ?? mapLeagueRules(league.settings),
+    note: "scoringRules uses Sleeper stat keys: rec = points per reception, pass_td/rush_td/rec_td = touchdown points, pass_yd/rush_yd/rec_yd = points per yard, pass_int/fum_lost = turnover penalties, bonus_* = threshold or positional bonuses (e.g. bonus_rec_te = TE premium per reception). rosterSlots shows starting lineup requirements (BN = bench, IR = injured reserve).",
   };
 }
 
