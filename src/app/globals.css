@@ -87,7 +87,8 @@ button {
 .body {
   padding: max(12px, env(safe-area-inset-top)) 18px 12px;
   flex: 1;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -443,7 +444,8 @@ button {
   padding: 14px 16px;
   color: var(--chalk);
   font-family: var(--font-mono), monospace;
-  font-size: 14px;
+  /* 16px minimum: iOS Safari auto-zooms into any focused input smaller than this. */
+  font-size: 16px;
   margin-bottom: 10px;
   box-shadow: var(--shadow-inset);
 }
@@ -738,6 +740,8 @@ button {
   outline: none;
   color: inherit;
   font: inherit;
+  /* 16px minimum: iOS Safari auto-zooms into any focused input smaller than this. */
+  font-size: 16px;
   min-width: 0;
 }
 
@@ -1004,16 +1008,18 @@ button {
   position: relative;
 }
 
+/* In normal flow on its own line — absolutely positioning it put it underneath the
+   large "SETTINGS" title text. */
 .settings-back {
-  position: absolute;
-  left: 0;
-  top: 2px;
-  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  align-self: flex-start;
   font-family: var(--font-mono), monospace;
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.06em;
   color: var(--chalk-60);
-  padding: 4px 0;
+  padding: 8px 0 2px;
 }
 
 .settings-row {

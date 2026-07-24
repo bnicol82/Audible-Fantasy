@@ -1,7 +1,16 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Barlow, Barlow_Condensed, IBM_Plex_Mono } from "next/font/google";
 import { ThemeProvider } from "@/lib/theme/ThemeProvider";
 import "./globals.css";
+
+// maximumScale: 1 stops iOS Safari's automatic zoom-in when focusing form inputs.
+// User-initiated pinch zoom still works — iOS ignores the cap for accessibility.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: "cover",
+};
 
 const barlow = Barlow({
   variable: "--font-barlow",
