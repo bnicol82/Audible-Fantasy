@@ -7,6 +7,13 @@ const { Client } = pg;
 async function main() {
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) {
+    // On deploy builds (--skip-if-unconfigured), a missing DATABASE_URL means "no DB
+    // for this environment" (e.g. a preview without env vars) — skip instead of
+    // failing the build. Local/manual runs keep the loud failure.
+    if (process.argv.includes("--skip-if-unconfigured")) {
+      console.warn("DATABASE_URL not set — skipping migrations for this build.");
+      process.exit(0);
+    }
     console.error("DATABASE_URL is required");
     process.exit(1);
   }

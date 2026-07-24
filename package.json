@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "db:migrate": "node --env-file=.env.local scripts/migrate.mjs"
+    "db:migrate": "node --env-file=.env.local scripts/migrate.mjs",
+    "db:migrate:deploy": "node scripts/migrate.mjs --skip-if-unconfigured"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.110.0",
