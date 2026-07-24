@@ -6,19 +6,11 @@
   "crons": [
     {
       "path": "/api/cache/sync",
-      "schedule": "0 8,14,20 * * *"
-    },
-    {
-      "path": "/api/cache/sync-injuries",
-      "schedule": "0 * * * *"
-    },
-    {
-      "path": "/api/cache/sync-conditions",
-      "schedule": "0 12,18 * * 4,5,6,0"
+      "schedule": "0 10 * * *"
     },
     {
       "path": "/api/cache/sync-insights",
-      "schedule": "0 10 * * *"
+      "schedule": "0 11 * * *"
     }
   ]
 }
