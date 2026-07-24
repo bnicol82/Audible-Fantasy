@@ -6,8 +6,12 @@ import {
   getSleeperTrendingAdds,
 } from "@/lib/providers/sleeper";
 
+export type WaiverType = "faab" | "rolling" | "reverse_standings";
+
 export type WaiversPayload = {
   source: "live" | "demo" | "ai" | "ai-cached";
+  // FAAB is only meaningful for faab leagues; the UI hides dollar figures otherwise.
+  waiverType: WaiverType;
   faabRemaining: number;
   claimsSet: number;
   targets: WaiverTarget[];
@@ -21,6 +25,7 @@ export type WaiversPayload = {
 function demoPayload(error?: string): WaiversPayload {
   return {
     source: "demo",
+    waiverType: "faab",
     faabRemaining: league.faabRemaining,
     claimsSet: league.claimsSet,
     targets: waiverTargets,
@@ -154,6 +159,7 @@ export async function getWaiversBoard(input: {
 
     return {
       source: "live" as const,
+      waiverType: activeLeague?.rules.waiverType ?? "faab",
       faabRemaining: facts.faabRemaining,
       claimsSet: league.claimsSet,
       targets,

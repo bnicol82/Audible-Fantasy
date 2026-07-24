@@ -300,10 +300,12 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: var(--border-width) solid var(--line-thin);
+  border: var(--border-width) solid var(--line-on-card, var(--line-thin));
   border-radius: 12px;
   background: var(--surface-raised, rgba(255, 255, 255, 0.06));
-  color: var(--text);
+  /* The icon tile is light in both themes, so the glyph must be dark — using --text made
+     it white-on-white (invisible) in away mode. */
+  color: var(--text-on-card);
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.12) inset, 0 3px 8px var(--depth-shadow);
 }
 
@@ -338,25 +340,27 @@ button {
 }
 
 .tabbar .on {
-  color: var(--accent);
+  color: var(--accent-nav, var(--accent));
   background: var(--accent-dim);
 }
 
 .tabbar .on .ico {
   border-width: var(--border-width-thick);
-  border-color: var(--accent);
+  border-color: var(--accent-on-card, var(--accent));
   background: var(--surface-card, var(--accent-dim));
-  color: var(--accent);
+  /* Glyph sits on the white active tile — use the on-card (dark-enough) accent. */
+  color: var(--accent-on-card, var(--accent));
   box-shadow: 0 0 0 2px var(--accent-dim), 0 4px 10px var(--depth-shadow);
 }
 
+/* Label + hint sit on the nav bar itself — use the nav-safe (light-enough on dark) accent. */
 .tabbar .on .tab-label {
-  color: var(--accent);
+  color: var(--accent-nav, var(--accent));
 }
 
 .tabbar .on .tab-hint {
-  color: var(--accent);
-  opacity: 0.78;
+  color: var(--accent-nav, var(--accent));
+  opacity: 0.85;
 }
 
 .btn {

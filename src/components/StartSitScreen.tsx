@@ -76,7 +76,9 @@ export function StartSitScreen({
     <div className="body">
       <AppHead title="Start / Sit" badge={`FLEX · WK ${comparison.week}`} />
       <Hash>
-        DECISION 1 OF 1
+        {comparison.source === "offseason"
+          ? `${comparison.leagueName ?? "YOUR LEAGUE"} · ROSTER OUTLOOK`
+          : "DECISION 1 OF 1"}
         {comparison.source === "demo" ? " · DEMO" : ""}
         {isAi ? ` · AI ANALYSIS${generatedLabel ? ` · ${generatedLabel}` : ""}` : ""}
       </Hash>
@@ -87,6 +89,28 @@ export function StartSitScreen({
         <p className="connect-error">{comparison.error}</p>
       )}
 
+      {comparison.source === "offseason" ? (
+        comparison.rosterOutlook && comparison.rosterOutlook.length > 0 ? (
+          <Card className="roster-card">
+            {comparison.rosterOutlook.map((player) => (
+              <div key={`${player.slot}-${player.name}`} className="slotrow">
+                <span className="slot">{player.slot}</span>
+                <div>
+                  <div className="pname">{player.name}</div>
+                  <div className="pmeta">
+                    {player.position} · {player.team}
+                  </div>
+                </div>
+                <div className="proj">
+                  {player.points !== null ? player.points.toFixed(1) : "—"}
+                  <small>{player.points !== null ? "PROJ" : "PTS"}</small>
+                </div>
+              </div>
+            ))}
+          </Card>
+        ) : null
+      ) : (
+        <>
       <Card>
         <div className="vs">
           <div className="pcard">
@@ -161,6 +185,8 @@ export function StartSitScreen({
         >
           {refreshing ? "REGENERATING…" : "REFRESH AI ANALYSIS ↻"}
         </button>
+      )}
+        </>
       )}
     </div>
   );

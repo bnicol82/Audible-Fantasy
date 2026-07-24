@@ -94,6 +94,9 @@ export function applyTeamTheme(team: NflTeam, mode: ColorMode) {
     root.style.setProperty("--btn-primary-text", getContrastText(primary));
     root.style.setProperty("--app-bg", "#ffffff");
     root.style.setProperty("--tabbar-bg", "#ffffff");
+    // Menu accents: legible on the white nav bar and on white icon tiles.
+    root.style.setProperty("--accent-nav", ensureContrast(primary, "#ffffff"));
+    root.style.setProperty("--accent-on-card", ensureContrast(primary, "#ffffff"));
     root.style.setProperty("--text-on-card", "var(--text)");
     root.style.setProperty("--text-on-card-muted", "var(--text-muted)");
     root.style.setProperty("--text-on-card-subtle", "var(--text-subtle)");
@@ -133,7 +136,13 @@ export function applyTeamTheme(team: NflTeam, mode: ColorMode) {
     root.style.setProperty("--accent-dim", hexAlpha(primary, 0.12));
     root.style.setProperty("--btn-primary-text", getContrastText(primary));
     root.style.setProperty("--app-bg", darkBase);
-    root.style.setProperty("--tabbar-bg", darken(darkBase, 0.15));
+    const tabbarBg = darken(darkBase, 0.15);
+    root.style.setProperty("--tabbar-bg", tabbarBg);
+    // Menu accents: the active label sits on the DARK nav bar (needs a light-enough
+    // accent), while the active icon glyph sits on a WHITE tile (needs a dark-enough
+    // accent) — so they're computed against different backgrounds.
+    root.style.setProperty("--accent-nav", ensureContrast(primary, tabbarBg));
+    root.style.setProperty("--accent-on-card", ensureContrast(primary, "#ffffff"));
     root.style.setProperty("--depth-highlight", "rgba(255, 255, 255, 0.88)");
     root.style.setProperty("--depth-shadow", "rgba(0, 0, 0, 0.22)");
     root.style.setProperty("--depth-shadow-strong", "rgba(0, 0, 0, 0.45)");
@@ -208,4 +217,36 @@ function luminance(hex: string) {
 
 function getContrastText(hex: string) {
   return luminance(hex) > 0.55 ? "#121412" : "#ffffff";
+}
+
+// WCAG relative luminance + contrast ratio, used to keep accent colors legible against
+// whatever surface they land on (some team primaries are near-black or near-white).
+function relLuminance(hex: string) {
+  const { r, g, b } = parseHex(hex);
+  const channel = (c: number) => {
+    const s = c / 255;
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+}
+
+function contrastRatio(a: string, b: string) {
+  const la = relLuminance(a);
+  const lb = relLuminance(b);
+  const [hi, lo] = la > lb ? [la, lb] : [lb, la];
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+// Nudges a foreground color toward white (on dark backgrounds) or black (on light ones)
+// until it clears the target contrast ratio — so an accent stays visible no matter which
+// team color it started from.
+function ensureContrast(fg: string, bg: string, target = 3.2) {
+  if (contrastRatio(fg, bg) >= target) return fg;
+  const toward = relLuminance(bg) < 0.5 ? "#ffffff" : "#000000";
+  let best = fg;
+  for (let weight = 0.85; weight >= 0; weight -= 0.05) {
+    best = mixHex(fg, toward, weight);
+    if (contrastRatio(best, bg) >= target) break;
+  }
+  return best;
 }
