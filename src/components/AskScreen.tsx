@@ -14,6 +14,7 @@ import {
   getStoredConversationId,
   setStoredConversationId,
 } from "@/lib/session";
+import { Markdown } from "./Markdown";
 import { AppHead, Hash } from "./ui";
 
 const IN_SEASON_SUGGESTIONS = [
@@ -264,8 +265,17 @@ export function AskScreen({
             key={`${message.role}-${index}`}
             className={`bubble ${message.role === "user" ? "user" : "ai"}`}
           >
-            {message.content ||
-              (streaming && index === messages.length - 1 ? "…" : "")}
+            {message.content ? (
+              message.role === "assistant" ? (
+                <Markdown text={message.content} />
+              ) : (
+                message.content
+              )
+            ) : streaming && index === messages.length - 1 ? (
+              "…"
+            ) : (
+              ""
+            )}
           </div>
         ))}
 

@@ -39,17 +39,27 @@ export async function POST(request: Request) {
       conversationId?: string;
     };
 
-  let resolvedContext = leagueContext as LeagueChatContext | undefined;
+  // Server-resolved league context is the source of truth: the client's copy can be
+  // stale or have silently fallen back to demo data after a failed fetch, which is how
+  // the AI ends up confidently describing a league the user isn't in.
+  let resolvedContext: LeagueChatContext | undefined;
 
-  if (!resolvedContext && profileId && leagueId && process.env.DATABASE_URL) {
+  if (profileId && leagueId && process.env.DATABASE_URL) {
     try {
       const league = await getActiveLeague(profileId, leagueId);
       if (league) {
         resolvedContext = buildLeagueChatContext(league);
+        if (leagueContext?.phase) {
+          resolvedContext = { ...resolvedContext, phase: leagueContext.phase };
+        }
       }
     } catch {
-      // Fall back to demo context below
+      // Fall through to client context / demo below
     }
+  }
+
+  if (!resolvedContext && leagueContext) {
+    resolvedContext = leagueContext;
   }
 
   if (!resolvedContext) {

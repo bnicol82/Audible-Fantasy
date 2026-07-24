@@ -10,6 +10,7 @@ import { OnboardingScreen } from "@/components/OnboardingScreen";
 import { PaywallScreen } from "@/components/PaywallScreen";
 import { ProDashboardScreen } from "@/components/ProDashboardScreen";
 import { SettingsScreen } from "@/components/SettingsScreen";
+import { InsightsScreen } from "@/components/InsightsScreen";
 import { StartSitScreen } from "@/components/StartSitScreen";
 import { AppShell, TabBar } from "@/components/ui";
 import { WaiversScreen } from "@/components/WaiversScreen";
@@ -28,7 +29,7 @@ import {
 import { useTheme } from "@/lib/theme/ThemeProvider";
 
 type Tab = "team" | "ask" | "waivers" | "draft" | "more";
-type View = Tab | "startsit" | "paywall" | "team-detail" | "settings";
+type View = Tab | "startsit" | "paywall" | "team-detail" | "settings" | "insights";
 
 const LEAGUE_IMPORT_ENABLED = true;
 
@@ -173,7 +174,7 @@ export default function Home() {
   };
 
   const activeTab: Tab =
-    view === "startsit" || view === "paywall" || view === "team-detail"
+    view === "startsit" || view === "paywall" || view === "team-detail" || view === "insights"
       ? "team"
       : view === "settings"
         ? "more"
@@ -209,6 +210,7 @@ export default function Home() {
             isDraftMode={isDraftMode}
             onStartSit={() => setView("startsit")}
             onOpenDraft={() => setView("draft")}
+            onOpenAlerts={() => setView("insights")}
           />
         );
       case "team-detail":
@@ -218,6 +220,7 @@ export default function Home() {
             isDraftMode={isDraftMode}
             onStartSit={() => setView("startsit")}
             onOpenDraft={() => setView("draft")}
+            onOpenAlerts={() => setView("insights")}
           />
         );
       case "ask":
@@ -245,6 +248,8 @@ export default function Home() {
             }}
           />
         );
+      case "insights":
+        return <InsightsScreen leagueId={leagueId} />;
       case "more":
         return (
           <MoreScreen
@@ -281,6 +286,7 @@ export default function Home() {
             isDraftMode={isDraftMode}
             onStartSit={() => setView("startsit")}
             onOpenDraft={() => setView("draft")}
+            onOpenAlerts={() => setView("insights")}
           />
         );
     }

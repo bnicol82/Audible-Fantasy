@@ -15,7 +15,21 @@ export type LeagueChatContext = {
   leagueStatus?: string;
   draftSummary?: string;
   leagueRules?: LeagueRules;
+  scoringSummary?: string;
+  isDemo?: boolean;
 };
+
+// Short human-readable highlights of the league's real scoring dict, for the system
+// prompt — the full rule set lives behind the get_league_settings tool.
+function summarizeScoring(raw: Record<string, number>): string | undefined {
+  const parts: string[] = [];
+  if (typeof raw.rec === "number") parts.push(`${raw.rec} pt/reception`);
+  if (typeof raw.pass_td === "number") parts.push(`${raw.pass_td} pt pass TD`);
+  if (typeof raw.bonus_rec_te === "number" && raw.bonus_rec_te > 0)
+    parts.push(`TE premium +${raw.bonus_rec_te}/rec`);
+  if (typeof raw.pass_int === "number") parts.push(`${raw.pass_int} INT`);
+  return parts.length ? parts.join(", ") : undefined;
+}
 
 function formatLeagueRulesSummary(rules: LeagueRules): string {
   const parts: string[] = [];
@@ -62,6 +76,8 @@ export function buildLeagueChatContext(
     leagueStatus: league.leagueStatus,
     draftSummary,
     leagueRules: league.rules,
+    scoringSummary: summarizeScoring(league.scoringSettings.raw ?? {}),
+    isDemo: false,
   };
 }
 
@@ -82,6 +98,7 @@ export function demoLeagueChatContext(phase: AppPhase = "in_season"): LeagueChat
       leagueStatus: "pre_draft",
       draftSummary:
         "Snake draft, pick 4. Biggest needs: RB, WR, TE. Use ADP and roster construction, not vibes.",
+      isDemo: true,
     };
   }
 
@@ -95,5 +112,6 @@ export function demoLeagueChatContext(phase: AppPhase = "in_season"): LeagueChat
     teamName: "Billy's Bandits",
     season: new Date().getFullYear(),
     phase: "in_season",
+    isDemo: true,
   };
 }

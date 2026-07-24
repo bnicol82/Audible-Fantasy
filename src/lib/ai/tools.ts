@@ -140,6 +140,15 @@ export const inSeasonAiTools: Tool[] = [
       required: ["player_ids"],
     },
   },
+  {
+    name: "get_league_settings",
+    description:
+      "The league's full real configuration: every scoring rule (per-stat point values, bonuses), roster slots, team count, and waiver/playoff/trade rules. Call this whenever the user asks about their league settings, scoring, or roster requirements.",
+    input_schema: {
+      type: "object",
+      properties: {},
+    },
+  },
 ];
 
 export const draftAiTools: Tool[] = [
@@ -196,6 +205,15 @@ export const draftAiTools: Tool[] = [
       required: ["player_ids"],
     },
   },
+  {
+    name: "get_league_settings",
+    description:
+      "The league's full real configuration: every scoring rule, roster slots, team count, and waiver/playoff/trade rules. Call this whenever the user asks about their league settings or scoring.",
+    input_schema: {
+      type: "object",
+      properties: {},
+    },
+  },
 ];
 
 export const aiTools = inSeasonAiTools;
@@ -204,17 +222,31 @@ export function getToolsForPhase(phase?: AppPhase) {
   return phase === "draft" ? draftAiTools : inSeasonAiTools;
 }
 
+const STYLE_SECTION = `
+STYLE:
+- Format for a chat bubble. Lead with the answer in your first sentence — verdict first, reasoning after.
+- **Bold** player names and the final call. Use short bullet lists for comparisons, never walls of text.
+- Keep answers tight: 2-6 sentences or a few bullets unless the user asks for depth.
+- One well-placed emoji per answer max (🏈 ⚡ 🔥 📊 🚑) — energetic but professional, never spammy.`;
+
+const DEMO_WARNING = `
+IMPORTANT: You are running on DEMO data — no real league is connected. The league context below is fictional sample data. If the user asks about THEIR league, settings, or roster, tell them clearly that they're in demo mode and should connect their Sleeper league (Connect screen) to get real answers. Never present demo settings as if they were the user's actual league.`;
+
 export function buildSystemPrompt(context: LeagueChatContext) {
+  const demoBlock = context.isDemo ? DEMO_WARNING : "";
+
   if (context.phase === "draft") {
     return `You are Audible, a fantasy football DRAFT assistant grounded in real data.
-
+${demoBlock}
 RULES:
 - Never invent ADP, rankings, or injury statuses. Use tools for every factual claim.
+- When asked about league settings, scoring, or roster requirements, call get_league_settings — it returns the league's full real configuration.
 - Recommend specific players by name with clear reasoning (roster needs, positional scarcity, value vs ADP).
 - Account for carryover/keeper players already on the roster — don't recommend duplicates.
 - Track positional runs and tier breaks. Warn when a position is drying up.
 - Be decisive: "Take Bijan here" not "consider several options."
 - Show the data behind picks (ADP, roster need, tier).
+${STYLE_SECTION}
 
 DRAFT CONTEXT:
 - League: ${context.leagueName}
@@ -227,9 +259,10 @@ ${context.draftSummary ? `- ${context.draftSummary}` : ""}`;
   const rulesSummary = context.leagueRules ? formatLeagueRulesSummary(context.leagueRules) : null;
 
   return `You are Audible, a fantasy football assistant grounded in real data.
-
+${demoBlock}
 RULES:
 - Never invent stats or injury statuses. Use tools for every factual claim.
+- When asked about league settings, scoring rules, or roster requirements, call get_league_settings — it returns the league's full real configuration (every point value, roster slots, waiver/playoff rules). Never say you don't have access to league settings.
 - Compute values under the league's actual scoring settings (${context.scoringFormat}) — get_player_stats and get_projections already do this for you using the league's real point-value rules, not a generic PPR bucket.
 - Before making any claim about weather or Vegas lines, call get_game_conditions — don't assert conditions you haven't looked up.
 - Before making any claim about injury severity or timeline, call get_injury_report — Sleeper's roster data only has a coarse status flag.
@@ -237,10 +270,11 @@ RULES:
 - Respect this league's actual waiver/trade/playoff rules (below) — don't assume generic defaults.
 - Be decisive: "Start Nacua" not "it depends on many factors."
 - Show the data behind recommendations (projections, matchups, target share).
+${STYLE_SECTION}
 
 LEAGUE CONTEXT:
 - League: ${context.leagueName}
 - Week: ${context.week}
 - Record: ${context.record}
-- Roster: ${context.rosterSummary}${rulesSummary ? `\n- Rules: ${rulesSummary}` : ""}`;
+- Roster: ${context.rosterSummary}${context.scoringSummary ? `\n- Scoring highlights: ${context.scoringSummary} (full rules via get_league_settings)` : ""}${rulesSummary ? `\n- Rules: ${rulesSummary}` : ""}`;
 }

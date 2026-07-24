@@ -1,0 +1,43 @@
+# Optional high-frequency data sync — free replacement for the Vercel Pro cron schedules.
+#
+# Vercel's Hobby plan allows only two once-daily crons, so vercel.json keeps just the
+# daily full sync + insights sweep. This workflow restores fresher injury/weather/odds
+# data by hitting the same authenticated sync endpoints every 3 hours.
+#
+# To enable: add two repository secrets (Settings → Secrets and variables → Actions):
+#   CRON_URL    — the deployed app origin, e.g. https://audible-fantasy-one.vercel.app
+#   CRON_SECRET — the same value as the CRON_SECRET env var on Vercel
+# Without them, runs exit quietly as skipped no-ops.
+
+name: data-sync
+
+on:
+  schedule:
+    - cron: "0 */3 * * *"
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      CRON_URL: ${{ secrets.CRON_URL }}
+      CRON_SECRET: ${{ secrets.CRON_SECRET }}
+    steps:
+      - name: Sync injury reports
+        run: |
+          if [ -z "$CRON_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "CRON_URL/CRON_SECRET not configured — skipping."
+            exit 0
+          fi
+          curl --fail-with-body -sS -X POST "$CRON_URL/api/cache/sync-injuries" \
+            -H "Authorization: Bearer $CRON_SECRET"
+
+      - name: Sync game conditions (weather + odds)
+        run: |
+          if [ -z "$CRON_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "CRON_URL/CRON_SECRET not configured — skipping."
+            exit 0
+          fi
+          curl --fail-with-body -sS -X POST "$CRON_URL/api/cache/sync-conditions" \
+            -H "Authorization: Bearer $CRON_SECRET"
