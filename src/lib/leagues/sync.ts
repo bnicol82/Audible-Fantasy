@@ -303,11 +303,12 @@ export async function getActiveLeague(profileId: string, leagueId: string) {
     entries: NormalizedRosterEntry[];
   }>;
 
-  const [nflState, sleeperRosters, users, liveLeague] = await Promise.all([
+  const [nflState, sleeperRosters, users, liveLeague, players] = await Promise.all([
     getSleeperNflState(),
     getSleeperRosters(league.external_league_id),
     getSleeperLeagueUsers(league.external_league_id),
     getSleeperLeague(league.external_league_id),
+    getSleeperPlayers(),
   ]);
 
   const week = nflState.week;
@@ -368,6 +369,17 @@ export async function getActiveLeague(profileId: string, leagueId: string) {
     : { format: "half_ppr", raw: {} };
   const rules = mapLeagueRules(liveLeague.settings);
 
+  // Normalize the roster from LIVE Sleeper data rather than the stored jsonb snapshot:
+  // stored entries go stale the moment the user edits their lineup in Sleeper, and rows
+  // synced by older app versions predate fields like rosterStatus — which silently broke
+  // every downstream consumer that filters on it (start/sit fell back to demo data).
+  const liveNormalized = normalizeUserRosterEntries(
+    userSleeperRoster,
+    users,
+    players,
+    liveLeague.roster_positions
+  );
+
   return {
     leagueId: league.id,
     externalLeagueId: league.external_league_id,
@@ -385,7 +397,7 @@ export async function getActiveLeague(profileId: string, leagueId: string) {
     sleeperUserId: league.sleeper_user_id,
     externalRosterId: rosterRow.external_roster_id,
     roster: await enrichRosterWithProjections({
-      roster: rosterRow.entries,
+      roster: liveNormalized.entries,
       season: league.season,
       week,
       scoringSettings,

@@ -31,8 +31,11 @@ export function pickFlexDecision(
   }>
 ) {
   // IR/taxi players are not real bench depth — never surface them as a flex-swap
-  // candidate, even though they used to be indistinguishable from "BN".
-  const eligibleBench = roster.filter((player) => player.rosterStatus === "active");
+  // candidate. Entries persisted by older app versions predate rosterStatus, so a
+  // missing value means a normal active player, not an exclusion.
+  const eligibleBench = roster.filter(
+    (player) => (player.rosterStatus ?? "active") === "active"
+  );
 
   const flexStarter = eligibleBench.find((player) => player.slot === "FLEX");
   const benchSkill = eligibleBench.filter(
